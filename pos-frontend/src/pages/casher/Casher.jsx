@@ -41,7 +41,7 @@ const Casher = () => {
       category: "Croissant",
     },
     {
-      id: 5,
+      id: 6,
       name: "Berry Whipped Cream Croissant",
       description: "Sweet croissant with blueberries and strawberries inside",
       price: 8.92,

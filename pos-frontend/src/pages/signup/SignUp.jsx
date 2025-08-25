@@ -1,9 +1,14 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { MdOutlineEmail } from "react-icons/md";
 import { FiPhone } from "react-icons/fi";
 import { RiLockPasswordLine } from "react-icons/ri";
+import axios from "axios";
+
+// Toastify for notifications
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -13,10 +18,15 @@ const SignUp = () => {
     phone: "",
     businessName: "",
     password: "",
+    role: 0, // Default role: 0 = CASHIER
   });
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const navigate = useNavigate();
+
+  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -25,21 +35,46 @@ const SignUp = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  // Handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate signup process
-    setTimeout(() => {
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/user/auth/signup",
+        formData
+      );
+
+      console.log("Signup successful:", response.data);
+
+      if (response.data.status === "success") {
+        toast.success(response.data.message || "Signup successful!", {
+          position: "top-right",
+          autoClose: 1000, // Close after 2 seconds
+          onClose: () => {
+            // Optionally store user info in localStorage
+            localStorage.setItem("user", JSON.stringify(response.data.user));
+
+            // Redirect to login page after toast is closed
+            navigate("/login");
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Signup failed:", error.response?.data || error.message);
+
+      const errorMsg = error.response?.data?.message || "Signup failed!";
+      toast.error(errorMsg, { position: "top-right" });
+    } finally {
       setIsLoading(false);
-      console.log("Signup attempted with:", formData);
-      // Here you would typically handle the signup logic
-    }, 1500);
+    }
   };
 
   return (
-    <div className="flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-3.5 px-4 sm:px-6 lg:px-8 font-ubuntu">
-      <div className="max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div className="flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-3.5 px-4 sm:px-6 lg:px-8 font-ubuntu min-h-screen">
+      <ToastContainer />
+      <div className="max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden w-full">
         <div className="md:flex">
           {/* Left Side - Illustration */}
           <div className="hidden md:block w-5/12 bg-gradient-to-br from-blue-600 to-indigo-700 p-5 text-white">
@@ -51,63 +86,31 @@ const SignUp = () => {
               </p>
 
               <div className="space-y-2 mb-10">
-                <div className="flex items-center">
-                  <div className="bg-blue-500 rounded-full p-2 mr-3">
-                    <svg
-                      className="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M5 13l4 4L19 7"
-                      ></path>
-                    </svg>
+                {[
+                  "Easy inventory management",
+                  "Sales analytics & reports",
+                  "Customer management",
+                ].map((text, idx) => (
+                  <div key={idx} className="flex items-center">
+                    <div className="bg-blue-500 rounded-full p-2 mr-3">
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 13l4 4L19 7"
+                        ></path>
+                      </svg>
+                    </div>
+                    <span className="text-[14px]">{text}</span>
                   </div>
-                  <span className="text-[14px]">Easy inventory management</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="bg-blue-500 rounded-full p-2 mr-3">
-                    <svg
-                      className="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M5 13l4 4L19 7"
-                      ></path>
-                    </svg>
-                  </div>
-                  <span className="text-[14px]">Sales analytics & reports</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="bg-blue-500 rounded-full p-2 mr-3">
-                    <svg
-                      className="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M5 13l4 4L19 7"
-                      ></path>
-                    </svg>
-                  </div>
-                  <span className="text-[14px]">Customer management</span>
-                </div>
+                ))}
               </div>
 
               <div className="bg-blue-500/20 p-2 rounded-lg border border-blue-400">
@@ -123,7 +126,7 @@ const SignUp = () => {
           </div>
 
           {/* Right Side - Form */}
-          <div className="md:w-3/5 py-5 px-6">
+          <div className="md:w-7/12 py-5 px-6">
             <div className="text-center mb-5">
               <div className="inline-flex items-center justify-center h-10 w-10 sm:w-12 sm:h-12 bg-blue-600 rounded-full mb-1">
                 <svg
@@ -149,71 +152,56 @@ const SignUp = () => {
               </p>
             </div>
 
-            <form className="space-y-1" onSubmit={handleSubmit}>
+            <form className="space-y-3" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label
-                    htmlFor="firstName"
-                    className="block text-sm font-medium text-black mb-1"
-                  >
+                  <label className="block text-sm font-medium text-black mb-1">
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <input
-                    id="firstName"
                     name="firstName"
                     type="text"
                     required
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-1.5 text-[14px] border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 text-[14px] border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="John"
                   />
                 </div>
                 <div>
-                  <label
-                    htmlFor="lastName"
-                    className="block text-sm font-medium text-black mb-1"
-                  >
+                  <label className="block text-sm font-medium text-black mb-1">
                     Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
-                    id="lastName"
                     name="lastName"
                     type="text"
                     required
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-1.5 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Doe"
                   />
                 </div>
               </div>
 
               <div>
-                <label
-                  htmlFor="businessName"
-                  className="block text-sm font-medium text-black mb-1"
-                >
+                <label className="block text-sm font-medium text-black mb-1">
                   Business Name <span className="text-red-500">*</span>
                 </label>
                 <input
-                  id="businessName"
                   name="businessName"
                   type="text"
                   required
                   value={formData.businessName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-1.5 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="My Business Inc."
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-black mb-1"
-                  >
+                  <label className="block text-sm font-medium text-black mb-1">
                     Email Address <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -221,23 +209,19 @@ const SignUp = () => {
                       <MdOutlineEmail size={16} />
                     </span>
                     <input
-                      id="email"
                       name="email"
                       type="email"
                       required
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full pl-9 px-4 py-1.5 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-9 px-4 py-2 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="john@example.com"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="phone"
-                    className="block text-sm font-medium text-black mb-1"
-                  >
+                  <label className="block text-sm font-medium text-black mb-1">
                     Phone Number <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -245,121 +229,60 @@ const SignUp = () => {
                       <FiPhone size={16} />
                     </span>
                     <input
-                      id="phone"
                       name="phone"
                       type="tel"
+                      required
                       value={formData.phone}
                       onChange={handleInputChange}
-                      className="w-full pl-9 px-4 py-1.5 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-9 px-4 py-2 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="+92 300 1234567"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                <div className="w-full">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-black mb-1"
+              <div>
+                <label className="block text-sm font-medium text-black mb-1">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative w-full">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                    <RiLockPasswordLine size={16} />
+                  </span>
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className="w-full pl-9 pr-10 px-4 py-2 text-[14px] border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter your password"
+                  />
+                  <div
+                    className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    Password <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative w-full">
-                    {/* Lock Icon */}
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                      <RiLockPasswordLine size={16} />
-                    </span>
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="w-full pl-9 pr-10 px-4 py-2 text-[14px]  border border-gray-300 rounded-md focus:outline-none  focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter your password"
-                    />
-                    {/* Eye Toggle Icon */}
-                    <div
-                      className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <AiOutlineEyeInvisible className="h-5 w-5 text-gray-500 hover:text-gray-600" />
-                      ) : (
-                        <AiOutlineEye className="h-5 w-5 text-gray-500 hover:text-gray-600" />
-                      )}
-                    </div>
+                    {showPassword ? (
+                      <AiOutlineEyeInvisible className="h-5 w-5 text-gray-500 hover:text-gray-600" />
+                    ) : (
+                      <AiOutlineEye className="h-5 w-5 text-gray-500 hover:text-gray-600" />
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center ">
-                <input
-                  id="agreeToTerms"
-                  name="agreeToTerms"
-                  type="checkbox"
-                  required
-                  // checked={formData.agreeToTerms}
-                  // onChange={handleInputChange}
-                  className="h-3 w-3 mt-1.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label
-                  htmlFor="agreeToTerms"
-                  className="ml-2 mt-1.5 block sm:mt-1 text-[9px] sm:text-sm text-gray-900"
-                >
-                  I agree to the {""}
-                   <a href="#" className="text-blue-600 hover:text-blue-600 hover:underline">
-                    Terms of Service {""}
-                  </a>
-                  and {""}
-                  <a href="#" className="text-blue-600 hover:text-blue-600 hover:underline">
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`w-full flex justify-center py-2 px-4 mt-3 border border-transparent text-sm font-medium font-ubuntu rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out ${
-                    isLoading ? "opacity-75 cursor-not-allowed" : ""
-                  }`}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Creating Account...
-                    </div>
-                  ) : (
-                    "Create Account"
-                  )}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full flex justify-center py-2.5 px-4 mt-3 border border-transparent text-sm font-medium font-ubuntu rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out ${
+                  isLoading ? "opacity-75 cursor-not-allowed" : ""
+                }`}
+              >
+                {isLoading ? "Creating Account..." : "Create Account"}
+              </button>
             </form>
 
-            <div className="mt-3 text-center">
+            <div className="mt-4 text-center">
               <p className="text-sm text-gray-600">
                 Already have an account?
                 <Link

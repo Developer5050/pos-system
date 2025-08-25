@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { MdOutlineEmail } from "react-icons/md";
 import { RiLockPasswordLine } from "react-icons/ri";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
@@ -12,18 +14,81 @@ const Login = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  // Check for remembered email on mount
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login process
-    setTimeout(() => {
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/user/auth/login",
+        { email, password }
+      );
+
+      console.log("Login successful:", response.data);
+
+      // Show success toast
+      toast.success("Login successful! Redirecting...", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+
+      // Save token and user info in localStorage
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+
+        if (rememberMe) {
+          localStorage.setItem("rememberedEmail", email);
+        } else {
+          localStorage.removeItem("rememberedEmail");
+        }
+      }
+
+      // Update auth state in parent (if passed)
+      if (onLogin) onLogin();
+
+      // Delay navigation slightly to allow toast to be visible
+      setTimeout(() => {
+        // Role-based navigation
+        const userRole = response.data.user.role;
+        if (userRole === "CASHIER") {
+          navigate("/cashier"); // Cashier page
+        } else if (userRole === "ADMIN") {
+          navigate("/admin"); // Admin dashboard
+        } else {
+          navigate("/"); // fallback route
+        }
+      }, 2000);
+    } catch (err) {
+      console.error("Login failed:", err.response?.data || err.message);
+      const errorMessage =
+        err.response?.data?.message || "Login failed. Please try again.";
+
+      // Show error toast
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } finally {
       setIsLoading(false);
-      // Call the onLogin function to update authentication state
-      onLogin();
-      // Navigate to dashboard
-      navigate("/");
-    }, 1500);
+    }
   };
 
   return (
@@ -55,64 +120,53 @@ const Login = ({ onLogin }) => {
 
         {/* Login Form */}
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-3">
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-black mb-1"
-              >
-                Email <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MdOutlineEmail size={16} className="text-gray-400 mt-0.5" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="pl-9 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">
+              Email <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MdOutlineEmail size={16} className="text-gray-400 mt-0.5" />
               </div>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="pl-9 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm-text-sm"
+              />
             </div>
+          </div>
 
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-black mb-1"
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">
+              Password <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <RiLockPasswordLine size={16} className="text-gray-400" />
+              </div>
+              <input
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-9 pr-10 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm-text-sm"
+                placeholder="Enter your password"
+              />
+              <div
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                onClick={() => setShowPassword(!showPassword)}
               >
-                Password <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <RiLockPasswordLine size={16} className="text-gray-400" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-9 pr-10 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Enter your password"
-                />
-                <div
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <AiOutlineEyeInvisible className="h-5 w-5 text-gray-500  hover:text-gray-600" />
-                  ) : (
-                    <AiOutlineEye className="h-5 w-5 text-gray-500" />
-                  )}
-                </div>
+                {showPassword ? (
+                  <AiOutlineEyeInvisible className="h-5 w-5 text-gray-500 hover:text-gray-600" />
+                ) : (
+                  <AiOutlineEye className="h-5 w-5 text-gray-500" />
+                )}
               </div>
             </div>
           </div>
@@ -121,17 +175,12 @@ const Login = ({ onLogin }) => {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center">
               <input
-                id="remember-me"
-                name="remember-me"
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-3 w-3 ml-0.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 block text-gray-900 text-xs sm:text-sm"
-              >
+              <label className="ml-2 block text-gray-900 text-xs sm:text-sm">
                 Remember me
               </label>
             </div>
@@ -148,7 +197,7 @@ const Login = ({ onLogin }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className={`group relative w-full flex justify-center mt-5 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out ${
+              className={`group relative w-full flex justify-center mt-5 py-2.5 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out ${
                 isLoading ? "opacity-75 cursor-not-allowed" : ""
               }`}
             >

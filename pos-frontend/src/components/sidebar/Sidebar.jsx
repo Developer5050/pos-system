@@ -1,15 +1,71 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
-import { MdDashboard } from "react-icons/md";
+import { NavLink, useNavigate } from "react-router-dom";
 import { MdLogout } from "react-icons/md";
 import { FaShoppingCart, FaBox, FaUsers, FaCog } from "react-icons/fa";
 import { BiSolidCategory } from "react-icons/bi";
 import { AiFillDashboard } from "react-icons/ai";
+import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Sidebar = ({ onLogout }) => {
-  const handleLogout = () => {
-    if (onLogout) {
-      onLogout();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      // Show loading toast
+      const toastId = toast.loading("Logging out...", {
+        position: "top-right",
+      });
+
+      // Call logout API
+      const token = localStorage.getItem("token");
+      await axios.post(
+        "http://localhost:5000/user/auth/logout",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Clear localStorage
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("isAuthenticated");
+
+      // Update toast to success
+      toast.update(toastId, {
+        render: "Logout successful!",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+
+      // Update auth state in App.jsx
+      if (onLogout) onLogout();
+
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    } catch (error) {
+      console.error("Logout failed:", error.response?.data || error.message);
+
+      // Show error toast
+      toast.error("Logout failed. Please try again.", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 

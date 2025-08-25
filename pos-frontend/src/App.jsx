@@ -12,22 +12,22 @@ import Orders from "./pages/order/Orders";
 import Category from "./pages/category/Category";
 import Products from "./pages/product/Products";
 import Dashboard from "./pages/dashboard/Dashboard";
-import Casher from "./pages/casher/Casher";
+import Cashier from "./pages/cashier/Cashier";
 import Settings from "./pages/setting/Settings";
 import SignUp from "./pages/signup/SignUp";
 import Login from "./pages/login/Login";
 
-// A wrapper component to conditionally show the sidebar
+// Layout wrapper to conditionally show sidebar
 const Layout = ({ children, onLogout }) => {
   const location = useLocation();
-  const isCasherPage = location.pathname === "/casher";
+  const isCashierPage = location.pathname === "/cashier";
 
   return (
     <>
-      {!isCasherPage && <Sidebar onLogout={onLogout} />}
+      {!isCashierPage && <Sidebar onLogout={onLogout} />}
       <div
         className={
-          !isCasherPage
+          !isCashierPage
             ? "ml-64 p-6 flex-1 min-h-screen bg-gray-100"
             : "flex-1 min-h-screen"
         }
@@ -51,19 +51,21 @@ const App = () => {
     setIsLoading(false);
   }, []);
 
-  // Function to handle login
+  // Handle login
   const handleLogin = () => {
     setIsAuthenticated(true);
     localStorage.setItem("isAuthenticated", "true");
   };
 
-  // Function to handle logout
+  // Handle logout
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
-  // Show loading while checking authentication status
+  // Show loading while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -75,12 +77,12 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes - accessible without authentication */}
+        {/* Public routes */}
         <Route
           path="/login"
           element={
             isAuthenticated ? (
-              <Navigate to="/" replace />
+              <Navigate to="/cashier" replace />
             ) : (
               <Login onLogin={handleLogin} />
             )
@@ -90,24 +92,28 @@ const App = () => {
           path="/signup"
           element={
             isAuthenticated ? (
-              <Navigate to="/" replace />
+              <Navigate to="/cashier" replace />
             ) : (
               <SignUp onLogin={handleLogin} />
             )
           }
         />
 
-        {/* Casher route - accessible with or without authentication */}
+        {/* Cashier route (protected) */}
         <Route
-          path="/casher"
+          path="/cashier"
           element={
-            <Layout onLogout={handleLogout}>
-              <Casher />
-            </Layout>
+            isAuthenticated ? (
+              <Layout onLogout={handleLogout}>
+                <Cashier />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
 
-        {/* Protected routes - require authentication */}
+        {/* Protected admin/dashboard routes */}
         <Route
           path="*"
           element={

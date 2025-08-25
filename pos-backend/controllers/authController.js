@@ -1,139 +1,139 @@
+const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
-const User = require("../models/userModel");
-const userSchema = require("../validate/userValidate");
-const generateToken = require("../utilis/generateToken");
+const jwt = require("jsonwebtoken");
 
-// Signup
+const prisma = new PrismaClient();
+
 const signup = async (req, res) => {
   try {
-    // ✅ Validate user input
-    const { error } = userSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
-    const { firstName, lastName, businessName, email, password, phone, role } =
+    const { firstName, lastName, businessName, email, phone, password, role } =
       req.body;
 
-    // ✅ Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ error: "User already exists" });
+      return res.status(400).json({ message: "User already exists" });
     }
 
-    // ✅ Hash the password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // ✅ Create new user
-    const newUser = new User({
-      firstName,
-      lastName,
-      businessName,
-      email,
-      password: hashedPassword,
-      phone,
-      role,
+    // Create new user
+    const newUser = await prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        businessName,
+        email,
+        phone,
+        password: hashedPassword,
+        role: "CASHIER",
+      },
     });
 
-    
-    await newUser.save();
-
     res.status(201).json({
+      status: "success",
       message: "User created successfully",
       user: {
-        id: newUser._id,
+        id: newUser.id,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         businessName: newUser.businessName,
         email: newUser.email,
         phone: newUser.phone,
+        password: newUser.password,
         role: newUser.role,
       },
     });
-  } catch (err) {
-    console.error("Signup Error:", err);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Login
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Validation
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-
-    // 2. Check if user exists
-    const user = await User.findOne({ email });
+    // Check if user exists
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return res.status(400).json({ error: "Invalid email or password" });
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // 3. Match password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: "Invalid email or password" });
+    // Compare passwords
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // 4. Generate token
-    const token = generateToken(user);
-
-    user.token = token;
-
-    await user.save();
-
-    // 5. Send response
-    res.status(200).json({
-      message: "Login successful",
-      user: {
-        id: user._id,
-        name: `${user.firstName} ${user.lastName}`,
+    // Generate JWT token
+    const tokenString = jwt.sign(
+      {
+        userId: user.id,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
-        businessName: user.businessName,
       },
-      token,
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    await prisma.token.create({
+      data: {
+        token: tokenString,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: "Login successful",
+      token: tokenString,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastname: user.lastName,
+        businessName: user.businessName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
     });
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ error: "Server error, please try again later" });
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Logout
+// controllers/authController.js
 const logout = async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1]; // "Bearer <token>"
-
-    if (!token) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
       return res.status(400).json({ error: "No token provided" });
     }
 
-    // Remove token from DB (invalidate)
-    const user = await User.findOne({ token });
+    const token = authHeader.split(" ")[1];
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    // Decode token to get userId (optional)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
 
-    user.token = null;
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Logout successful",
-      payload: {
-        user: user._id,
-        action: "LOGOUT",
-        timestamp: new Date(),
+    // Delete the token from DB
+    await prisma.token.deleteMany({
+      where: {
+        token: token,  // ya userId: userId, agar multiple token delete karne ho
       },
     });
-  } catch (error) {
-    console.error("Logout error:", error);
-    res.status(500).json({ error: "Server error, please try again later" });
+
+    return res.status(200).json({ success: true, message: "Logout successful" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Logout failed" });
   }
 };
 

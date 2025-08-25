@@ -3,24 +3,23 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const path = require("path");
-const connectDB = require("./database/databaseConfig");
-const authRoutes = require("./routes/authRoute");
 
-// Connect to MongoDB
-connectDB();
+// Routes
+const authRoute = require("./routes/authRoute");
 
-// Port
-const port = process.env.PORT || 8000;
+// PORT
+const port = process.env.PORT;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/static", express.static(path.join(__dirname, "public")));
 
-// Routes
-app.use("/user/auth", authRoutes);
+// Use Routes
+app.use("/user/auth", authRoute);
 
+// Start Server
 app.listen(port, () => {
-  console.log(`Server running is port ${port}`);
+  console.log(`Server is running at port ${port}`);
 });

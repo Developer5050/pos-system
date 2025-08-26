@@ -4,7 +4,6 @@ import { MdOutlineEmail } from "react-icons/md";
 import { RiLockPasswordLine } from "react-icons/ri";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import axios from "axios";
-import { toast } from "react-toastify";
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
@@ -35,16 +34,6 @@ const Login = ({ onLogin }) => {
 
       console.log("Login successful:", response.data);
 
-      // Show success toast
-      toast.success("Login successful! Redirecting...", {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
-
       // Save token and user info in localStorage
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
@@ -74,18 +63,6 @@ const Login = ({ onLogin }) => {
       }, 2000);
     } catch (err) {
       console.error("Login failed:", err.response?.data || err.message);
-      const errorMessage =
-        err.response?.data?.message || "Login failed. Please try again.";
-
-      // Show error toast
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +112,7 @@ const Login = ({ onLogin }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="pl-9 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm-text-sm"
+                className="pl-9 w-full border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm-text-sm"
               />
             </div>
           </div>
@@ -150,12 +127,12 @@ const Login = ({ onLogin }) => {
                 <RiLockPasswordLine size={16} className="text-gray-400" />
               </div>
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? "text" : "password "}
                 autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-9 pr-10 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm-text-sm"
+                className="pl-9 pr-10 w-full border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm-text-sm"
                 placeholder="Enter your password"
               />
               <div
@@ -178,7 +155,7 @@ const Login = ({ onLogin }) => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label className="ml-2 block text-gray-900 text-xs sm:text-sm">
                 Remember me
@@ -197,7 +174,7 @@ const Login = ({ onLogin }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className={`group relative w-full flex justify-center mt-5 py-2.5 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out ${
+              className={`group relative w-full flex justify-center mt-5 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out ${
                 isLoading ? "opacity-75 cursor-not-allowed" : ""
               }`}
             >

@@ -6,10 +6,6 @@ import { FiPhone } from "react-icons/fi";
 import { RiLockPasswordLine } from "react-icons/ri";
 import axios from "axios";
 
-// Toastify for notifications
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
 const SignUp = () => {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -49,23 +45,23 @@ const SignUp = () => {
       console.log("Signup successful:", response.data);
 
       if (response.data.status === "success") {
-        toast.success(response.data.message || "Signup successful!", {
-          position: "top-right",
-          autoClose: 1000, // Close after 2 seconds
-          onClose: () => {
-            // Optionally store user info in localStorage
-            localStorage.setItem("user", JSON.stringify(response.data.user));
+        // User info save karna
+        localStorage.setItem("user", JSON.stringify(response.data.user));
 
-            // Redirect to login page after toast is closed
-            navigate("/login");
-          },
-        });
+        // 2 second baad redirect
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
       }
     } catch (error) {
       console.error("Signup failed:", error.response?.data || error.message);
-
-      const errorMsg = error.response?.data?.message || "Signup failed!";
-      toast.error(errorMsg, { position: "top-right" });
+      toast.error(
+        error.response?.data?.message || "Signup failed. Please try again.",
+        {
+          position: "top-right",
+          autoClose: 500,
+        }
+      );
     } finally {
       setIsLoading(false);
     }
@@ -73,13 +69,12 @@ const SignUp = () => {
 
   return (
     <div className="flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-3.5 px-4 sm:px-6 lg:px-8 font-ubuntu min-h-screen">
-      <ToastContainer />
       <div className="max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden w-full">
         <div className="md:flex">
           {/* Left Side - Illustration */}
           <div className="hidden md:block w-5/12 bg-gradient-to-br from-blue-600 to-indigo-700 p-5 text-white">
             <div className="flex flex-col h-full justify-center">
-              <h2 className="text-2xl font-bold mb-4">Join Our POS System</h2>
+              <h2 className="text-2xl font-bold mb-2">Join Our POS System</h2>
               <p className="mb-8 text-[14px]">
                 Streamline your business operations with our powerful
                 point-of-sale solution.
@@ -164,7 +159,7 @@ const SignUp = () => {
                     required
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 text-[14px] border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-1.5 text-[14px] border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="John"
                   />
                 </div>
@@ -178,7 +173,7 @@ const SignUp = () => {
                     required
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-1.5 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Doe"
                   />
                 </div>
@@ -194,7 +189,7 @@ const SignUp = () => {
                   required
                   value={formData.businessName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-1.5 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="My Business Inc."
                 />
               </div>
@@ -214,7 +209,7 @@ const SignUp = () => {
                       required
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full pl-9 px-4 py-2 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-9 px-4 py-1.5 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="john@example.com"
                     />
                   </div>
@@ -234,7 +229,7 @@ const SignUp = () => {
                       required
                       value={formData.phone}
                       onChange={handleInputChange}
-                      className="w-full pl-9 px-4 py-2 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-9 px-4 py-1.5 text-[14px]  border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="+92 300 1234567"
                     />
                   </div>
@@ -255,7 +250,7 @@ const SignUp = () => {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full pl-9 pr-10 px-4 py-2 text-[14px] border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-9 pr-10 px-4 py-1.5 text-[14px] border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter your password"
                   />
                   <div
@@ -274,7 +269,7 @@ const SignUp = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full flex justify-center py-2.5 px-4 mt-3 border border-transparent text-sm font-medium font-ubuntu rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out ${
+                className={`w-full flex justify-center py-2 px-4 mt-5 border border-transparent text-sm font-medium font-ubuntu rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out ${
                   isLoading ? "opacity-75 cursor-not-allowed" : ""
                 }`}
               >

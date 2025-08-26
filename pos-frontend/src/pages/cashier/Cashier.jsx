@@ -220,9 +220,9 @@ const Casher = () => {
 
         {/* Product Grid - 3 columns on larger screens */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProducts.map((product) => (
+          {filteredProducts.map((product, index) => (
             <div
-              key={product.id}
+              key={`${product.id}-${index}`}
               className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow border border-blue-100"
               onClick={() => addToOrder(product)}
             >

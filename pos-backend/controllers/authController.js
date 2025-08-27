@@ -109,7 +109,6 @@ const login = async (req, res) => {
   }
 };
 
-// controllers/authController.js
 const logout = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -126,16 +125,17 @@ const logout = async (req, res) => {
     // Delete the token from DB
     await prisma.token.deleteMany({
       where: {
-        token: token,  // ya userId: userId, agar multiple token delete karne ho
+        token: token, // ya userId: userId, agar multiple token delete karne ho
       },
     });
 
-    return res.status(200).json({ success: true, message: "Logout successful" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Logout successful" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, message: "Logout failed" });
   }
 };
-
 
 module.exports = { signup, login, logout };

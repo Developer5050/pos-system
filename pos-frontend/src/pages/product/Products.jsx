@@ -52,7 +52,9 @@ const Products = () => {
     unit: "piece",
     discount: "",
     image: "",
-    status: "Active"
+    status: "Active",
+    imageFile: null,
+    imagePreview: ""
   });
 
   const [addFormData, setAddFormData] = useState({
@@ -65,8 +67,34 @@ const Products = () => {
     unit: "piece",
     discount: "",
     image: "",
-    status: "Active"
+    status: "Active",
+    imageFile: null,
+    imagePreview: ""
   });
+
+  // Handle image upload for both add and edit forms
+  const handleImageUpload = (e, isEditForm = false) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isEditForm) {
+          setEditFormData({
+            ...editFormData,
+            imageFile: file,
+            imagePreview: reader.result
+          });
+        } else {
+          setAddFormData({
+            ...addFormData,
+            imageFile: file,
+            imagePreview: reader.result
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Open add product modal
   const openAddModal = () => {
@@ -86,7 +114,9 @@ const Products = () => {
       unit: "piece",
       discount: "",
       image: "",
-      status: "Active"
+      status: "Active",
+      imageFile: null,
+      imagePreview: ""
     });
   };
 
@@ -103,7 +133,9 @@ const Products = () => {
       unit: product.unit,
       discount: product.discount,
       image: product.image,
-      status: product.status
+      status: product.status,
+      imageFile: null,
+      imagePreview: product.image
     });
     setIsEditModalOpen(true);
   };
@@ -142,7 +174,9 @@ const Products = () => {
       unit: "piece",
       discount: "",
       image: "",
-      status: "Active"
+      status: "Active",
+      imageFile: null,
+      imagePreview: ""
     });
   };
 
@@ -168,16 +202,30 @@ const Products = () => {
   const handleUpdateSubmit = (e) => {
     e.preventDefault();
 
+    // For a real application, you would upload the image file to a server here
+    // and get back a URL. For this example, we'll use a placeholder or data URL
+    let imageUrl = editingProduct.image;
+    if (editFormData.imageFile) {
+      // In a real app, this would be the uploaded image URL
+      // For demo purposes, we'll use the data URL directly
+      imageUrl = editFormData.imagePreview;
+    }
+
     // Update the product in the products array
     const updatedProducts = products.map((product) =>
       product.id === editingProduct.id
         ? {
             ...product,
-            ...editFormData,
+            name: editFormData.name,
+            description: editFormData.description,
             price: parseFloat(editFormData.price),
             costPrice: parseFloat(editFormData.costPrice),
             quantity: parseInt(editFormData.quantity),
+            brand: editFormData.brand,
+            unit: editFormData.unit,
             discount: parseInt(editFormData.discount),
+            status: editFormData.status,
+            image: imageUrl,
             updatedAt: new Date().toISOString().split("T")[0],
           }
         : product
@@ -191,6 +239,14 @@ const Products = () => {
   const handleAddSubmit = (e) => {
     e.preventDefault();
 
+    // For a real application, you would upload the image file to a server here
+    let imageUrl = "https://placehold.co/600x400"; // default placeholder
+    if (addFormData.imageFile) {
+      // In a real app, this would be the uploaded image URL
+      // For demo purposes, we'll use the data URL directly
+      imageUrl = addFormData.imagePreview;
+    }
+
     // Add new product to the products array
     const newProduct = {
       id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
@@ -202,7 +258,7 @@ const Products = () => {
       brand: addFormData.brand,
       unit: addFormData.unit,
       discount: parseInt(addFormData.discount),
-      image: addFormData.image,
+      image: imageUrl,
       status: addFormData.status,
       createdAt: new Date().toISOString().split("T")[0],
       updatedAt: new Date().toISOString().split("T")[0],
@@ -553,17 +609,39 @@ const Products = () => {
                     />
                   </div>
 
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-bold text-black mb-1">
-                      Image URL
+                      Product Image
                     </label>
-                    <input
-                      type="url"
-                      name="image"
-                      value={addFormData.image}
-                      onChange={handleAddInputChange}
-                      className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        {addFormData.imagePreview ? (
+                          <img
+                            src={addFormData.imagePreview}
+                            alt="Preview"
+                            className="w-16 h-16 rounded-md object-cover border"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-md border border-dashed border-gray-300 flex items-center justify-center">
+                            <i className="fas fa-image text-gray-400"></i>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <label className="block">
+                          <span className="sr-only">Choose product image</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, false)}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          />
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          JPG, PNG or GIF (Max 2MB)
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -740,17 +818,39 @@ const Products = () => {
                     />
                   </div>
 
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-bold text-black mb-1">
-                      Image URL
+                      Product Image
                     </label>
-                    <input
-                      type="url"
-                      name="image"
-                      value={editFormData.image}
-                      onChange={handleEditInputChange}
-                      className="w-full p-1.5 border rounded-md text-[14px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        {editFormData.imagePreview ? (
+                          <img
+                            src={editFormData.imagePreview}
+                            alt="Preview"
+                            className="w-16 h-16 rounded-md object-cover border"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-md border border-dashed border-gray-300 flex items-center justify-center">
+                            <i className="fas fa-image text-gray-400"></i>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <label className="block">
+                          <span className="sr-only">Choose product image</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, true)}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          />
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          JPG, PNG or GIF (Max 2MB)
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

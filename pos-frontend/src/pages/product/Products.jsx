@@ -489,7 +489,7 @@ const Products = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Product Title *
+                    Title *
                     </label>
                     <input
                       type="text"
@@ -547,7 +547,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Stock Quantity *
+                      Stock *
                     </label>
                     <input
                       type="number"
@@ -611,7 +611,7 @@ const Products = () => {
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-bold text-black mb-1">
-                      Product Image
+                      Image *
                     </label>
                     <div className="flex items-center space-x-4">
                       <div className="relative">
@@ -700,7 +700,7 @@ const Products = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Product Title *
+                      Title *
                     </label>
                     <input
                       type="text"
@@ -758,7 +758,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Stock Quantity *
+                      Stock *
                     </label>
                     <input
                       type="number"
@@ -820,7 +820,7 @@ const Products = () => {
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-bold text-black mb-1">
-                      Product Image
+                      Image
                     </label>
                     <div className="flex items-center space-x-4">
                       <div className="relative">

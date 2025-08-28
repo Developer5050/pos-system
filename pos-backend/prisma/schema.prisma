@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,11 +5,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-enum Role {
-  CASHIER
-  ADMIN
 }
 
 model User {
@@ -29,31 +18,19 @@ model User {
   role         Role      @default(CASHIER)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-  tokens       Token[]
   products     Product[]
+  tokens       Token[]
 }
 
 model Token {
   id        Int      @id @default(autoincrement())
   token     String   @unique
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
 
   @@index([expiresAt])
-}
-
-enum ProductStatus {
-  ACTIVE
-  INACTIVE
-}
-
-enum ProductUnit {
-  PIECE
-  KG
-  LITER
-  DOZEN
 }
 
 model Product {
@@ -66,12 +43,39 @@ model Product {
   barcode      String        @unique
   status       ProductStatus @default(ACTIVE)
   unit         ProductUnit   @default(PIECE)
-  brand        String?
+  brand        String
   costPrice    Float
   sellingPrice Float
   discount     Float         @default(0)
-  createdBy    User          @relation(fields: [createdById], references: [id])
   createdById  Int
-  createdAT    DateTime      @default(now())
-  upadtedAt    DateTime      @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  categoryId   Int
+  category     Category      @relation(fields: [categoryId], references: [id])
+  createdBy    User          @relation(fields: [createdById], references: [id])
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+enum Role {
+  CASHIER
+  ADMIN
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProductUnit {
+  PIECE
+  KG
+  LITER
+  DOZEN
 }

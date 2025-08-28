@@ -6,18 +6,25 @@ const path = require("path");
 
 // Routes
 const authRoute = require("./routes/authRoute");
+const productRoute = require("./routes/productRoute");
+const categoryRoute = require("./routes/categoryRoute");
 
 // PORT
 const port = process.env.PORT;
 
 // Middleware
 app.use(cors());
+// Body parsers (important order)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/static", express.static(path.join(__dirname, "uplaod")));
+
+// Serve uploaded images
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Use Routes
 app.use("/user/auth", authRoute);
+app.use("/api/product", productRoute);
+app.use("/api/category", categoryRoute);
 
 // Start Server
 app.listen(port, () => {

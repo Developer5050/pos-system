@@ -54,7 +54,7 @@ const Products = () => {
     image: "",
     status: "Active",
     imageFile: null,
-    imagePreview: ""
+    imagePreview: "",
   });
 
   const [addFormData, setAddFormData] = useState({
@@ -66,10 +66,11 @@ const Products = () => {
     brand: "",
     unit: "piece",
     discount: "",
+    barcode: "",
     image: "",
     status: "Active",
     imageFile: null,
-    imagePreview: ""
+    imagePreview: "",
   });
 
   // Handle image upload for both add and edit forms
@@ -82,13 +83,13 @@ const Products = () => {
           setEditFormData({
             ...editFormData,
             imageFile: file,
-            imagePreview: reader.result
+            imagePreview: reader.result,
           });
         } else {
           setAddFormData({
             ...addFormData,
             imageFile: file,
-            imagePreview: reader.result
+            imagePreview: reader.result,
           });
         }
       };
@@ -116,7 +117,7 @@ const Products = () => {
       image: "",
       status: "Active",
       imageFile: null,
-      imagePreview: ""
+      imagePreview: "",
     });
   };
 
@@ -135,7 +136,7 @@ const Products = () => {
       image: product.image,
       status: product.status,
       imageFile: null,
-      imagePreview: product.image
+      imagePreview: product.image,
     });
     setIsEditModalOpen(true);
   };
@@ -155,7 +156,9 @@ const Products = () => {
   // Handle delete product confirmation
   const confirmDelete = () => {
     if (productToDelete) {
-      setProducts(products.filter((product) => product.id !== productToDelete.id));
+      setProducts(
+        products.filter((product) => product.id !== productToDelete.id)
+      );
       closeDeleteModal();
     }
   };
@@ -176,7 +179,7 @@ const Products = () => {
       image: "",
       status: "Active",
       imageFile: null,
-      imagePreview: ""
+      imagePreview: "",
     });
   };
 
@@ -249,7 +252,7 @@ const Products = () => {
 
     // Add new product to the products array
     const newProduct = {
-      id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
+      id: products.length > 0 ? Math.max(...products.map((p) => p.id)) + 1 : 1,
       name: addFormData.name,
       description: addFormData.description,
       price: parseFloat(addFormData.price),
@@ -260,6 +263,7 @@ const Products = () => {
       discount: parseInt(addFormData.discount),
       image: imageUrl,
       status: addFormData.status,
+      barcode: addFormData.barcode,
       createdAt: new Date().toISOString().split("T")[0],
       updatedAt: new Date().toISOString().split("T")[0],
     };
@@ -322,7 +326,7 @@ const Products = () => {
             <option value="Inactive">Inactive</option>
           </select>
 
-          <button 
+          <button
             className="bg-blue-500 hover:bg-blue-600 text-white text-[14px] py-1 px-3 rounded-md flex items-center justify-center"
             onClick={openAddModal}
           >
@@ -489,7 +493,7 @@ const Products = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                    Title *
+                      Title <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -503,7 +507,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Brand *
+                      Brand <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -517,7 +521,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Cost Price ($) *
+                      Cost Price ($) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -532,7 +536,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Selling Price ($) *
+                      Selling Price ($) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -547,7 +551,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Stock *
+                      Stock <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -561,7 +565,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Unit *
+                      Unit <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="unit"
@@ -580,13 +584,13 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Status *
+                      Status <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="status"
                       value={addFormData.status}
                       onChange={handleAddInputChange}
-                      className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
                       <option value="Active">Active</option>
@@ -596,7 +600,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Discount (%)
+                      Discount (%) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -609,9 +613,22 @@ const Products = () => {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-bold text-black mb-1">
+                      Barcode <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="barcode"
+                      value={addFormData.barcode}
+                      onChange={handleAddInputChange}
+                      className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
                   <div className="md:col-span-2">
                     <label className="block text-sm font-bold text-black mb-1">
-                      Image *
+                      Image <span className="text-red-500">*</span>
                     </label>
                     <div className="flex items-center space-x-4">
                       <div className="relative">
@@ -638,7 +655,7 @@ const Products = () => {
                           />
                         </label>
                         <p className="text-xs text-gray-500 mt-1">
-                          JPG, PNG or GIF (Max 2MB)
+                          JPG, JPEG, PNG or GIF (Max 2MB)
                         </p>
                       </div>
                     </div>
@@ -700,7 +717,7 @@ const Products = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Title *
+                      Title <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -714,7 +731,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Brand *
+                      Brand <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -728,7 +745,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Cost Price ($) *
+                      Cost Price ($) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -743,7 +760,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Selling Price ($) *
+                      Selling Price ($) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -758,7 +775,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Stock *
+                      Stock <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -772,7 +789,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Unit *
+                      Unit <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="unit"
@@ -790,7 +807,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Status *
+                      Status <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="status"
@@ -805,7 +822,7 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Discount (%)
+                      Discount (%) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -820,7 +837,7 @@ const Products = () => {
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-bold text-black mb-1">
-                      Image
+                      Image <span className="text-red-500">*</span>
                     </label>
                     <div className="flex items-center space-x-4">
                       <div className="relative">
@@ -894,18 +911,29 @@ const Products = () => {
           <div className="bg-white rounded-xl shadow-lg w-full max-w-md">
             <div className="p-6">
               <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                <svg
+                  className="w-6 h-6 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  ></path>
                 </svg>
               </div>
-              
+
               <h3 className="text-lg font-medium text-gray-900 text-center mb-2">
                 Delete Product
               </h3>
-              
+
               <p className="text-sm text-gray-500 text-center mb-6">
-                Are you sure you want to delete the product "{productToDelete?.name}"? 
-                This action cannot be undone.
+                Are you sure you want to delete the product "
+                {productToDelete?.name}"? This action cannot be undone.
               </p>
 
               <div className="flex justify-center space-x-3">

@@ -3,15 +3,17 @@ const prisma = new PrismaClient();
 
 const addCategory = async (req, res) => {
   try {
+    console.log("REQ BODY:", req.body); // 👈 Add this
+
     const { name } = req.body;
 
-    const categroy = await prisma.category.create({
+    const category = await prisma.category.create({
       data: { name },
     });
 
     res.status(200).json({
       message: "Category add Successfully",
-      categroy,
+      category,
     });
   } catch (error) {
     res.status(400).json({
@@ -67,7 +69,7 @@ const getAllCategories = async (req, res) => {
         products: true,
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: "asc",
       },
     });
 
@@ -86,4 +88,9 @@ const getAllCategories = async (req, res) => {
   }
 };
 
-module.exports = { addCategory, updateCategory, deleteCategory,  getAllCategories };
+module.exports = {
+  addCategory,
+  updateCategory,
+  deleteCategory,
+  getAllCategories,
+};

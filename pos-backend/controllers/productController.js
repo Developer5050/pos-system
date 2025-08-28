@@ -1,5 +1,4 @@
 const { PrismaClient } = require("@prisma/client");
-const { json } = require("express");
 const prisma = new PrismaClient();
 
 // Generate SKU
@@ -9,10 +8,10 @@ const generateSKU = async () => {
 };
 
 // Generate Barcode
-const generateBarcode = async () => {
-  const count = await prisma.product.count();
-  return `BAR-${String(count + 1).padStart(5, "0")}`;
-};
+// const generateBarcode = async () => {
+//   const count = await prisma.product.count();
+//   return `BAR-${String(count + 1).padStart(5, "0")}`;
+// };
 
 // Calculate Discount
 const calculateDiscount = (costPrice, sellingPrice) => {
@@ -39,10 +38,15 @@ const addProduct = async (req, res) => {
       sellingPrice,
       createdById,
       categoryId,
+      barcode,
     } = body;
 
     if (!brand || brand.trim() === "") {
       return res.status(400).json({ error: "Brand is required" });
+    }
+
+    if (!barcode || barcode.trim() === "") {
+      return res.status(400).json({ error: "Barcode is required" });
     }
 
     const image = req.file?.path;
@@ -65,7 +69,8 @@ const addProduct = async (req, res) => {
         discount,
         image: image || null,
         sku: await generateSKU(),
-        barcode: await generateBarcode(),
+        barcode: barcode.trim(),
+
         createdById: parseInt(createdById),
         categoryId: categoryId ? parseInt(categoryId) : null,
       },

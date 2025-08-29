@@ -12,7 +12,11 @@ const {
 // get all product route
 router.get("/get-all-products", getAllProducts);
 // add product route
-router.post("/add-product", upload.single("image"), addProduct);
+router.post(
+  "/add-product",
+  upload.single("image"),
+  addProduct
+);
 // edit product route
 router.put("/edit-product/:id", upload.single("image"), editProduct);
 // delete product route

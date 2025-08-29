@@ -17,6 +17,9 @@ import Settings from "./pages/setting/Settings";
 import SignUp from "./pages/signup/SignUp";
 import Login from "./pages/login/Login";
 
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 // Layout wrapper to conditionally show sidebar
 const Layout = ({ children, onLogout }) => {
   const location = useLocation();
@@ -135,6 +138,20 @@ const App = () => {
           }
         />
       </Routes>
+
+      {/* 👇 ToastContainer yahan add karo */}
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </BrowserRouter>
   );
 };

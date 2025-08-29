@@ -14,17 +14,20 @@ const generateSKU = async () => {
 // };
 
 // Calculate Discount
-const calculateDiscount = (costPrice, sellingPrice) => {
-  if (!costPrice || !sellingPrice) return 0;
-  if (sellingPrice >= costPrice) return 0;
-  return ((costPrice - sellingPrice) / costPrice) * 100;
-};
+// const calculateDiscount = (costPrice, sellingPrice) => {
+//   if (!costPrice || !sellingPrice) return 0;
+//   if (sellingPrice >= costPrice) return 0;
+//   return ((costPrice - sellingPrice) / costPrice) * 100;
+// };
 
 const addProduct = async (req, res) => {
   try {
-    // Trim all keys to prevent trailing space issues
+    // Trim all string values
     const body = Object.fromEntries(
-      Object.entries(req.body).map(([k, v]) => [k.trim(), v])
+      Object.entries(req.body).map(([k, v]) => [
+        k.trim(),
+        typeof v === "string" ? v.trim() : v,
+      ])
     );
 
     const {
@@ -37,48 +40,66 @@ const addProduct = async (req, res) => {
       costPrice,
       sellingPrice,
       createdById,
-      categoryId,
+      category,
       barcode,
+      discount,
     } = body;
 
-    if (!brand || brand.trim() === "") {
-      return res.status(400).json({ error: "Brand is required" });
+    // Required fields validation
+    if (!title) return res.status(400).json({ error: "Title is required" });
+    if (!brand) return res.status(400).json({ error: "Brand is required" });
+    if (!barcode) return res.status(400).json({ error: "Barcode is required" });
+    if (!createdById)
+      return res.status(400).json({ error: "createdById is required" });
+    if (discount === undefined || discount === null)
+      return res.status(400).json({ error: "Discount is required" });
+
+    // Validate discount is a number
+    const discountValue = parseFloat(discount);
+    if (isNaN(discountValue)) {
+      return res.status(400).json({ error: "Discount must be a valid number" });
     }
 
-    if (!barcode || barcode.trim() === "") {
-      return res.status(400).json({ error: "Barcode is required" });
+    // Lookup category by name
+    let categoryId = null;
+    if (category) {
+      const categoryRecord = await prisma.category.findUnique({
+        where: { name: category },
+      });
+      if (!categoryRecord) {
+        return res
+          .status(400)
+          .json({ error: `Category "${category}" not found` });
+      }
+      categoryId = categoryRecord.id;
     }
 
-    const image = req.file?.path;
-
-    const discount = calculateDiscount(
-      parseFloat(costPrice),
-      parseFloat(sellingPrice)
-    );
+    const statusNormalized =
+      status && status.toUpperCase() === "INACTIVE" ? "INACTIVE" : "ACTIVE";
+    const unitNormalized = unit ? unit.toUpperCase() : "PIECE";
 
     const product = await prisma.product.create({
       data: {
         title,
         description: description || null,
         stock: parseInt(stock) || 0,
-        status,
-        unit,
+        status: statusNormalized,
+        unit: unitNormalized,
         brand: brand.trim(),
         costPrice: parseFloat(costPrice),
         sellingPrice: parseFloat(sellingPrice),
-        discount,
-        image: image || null,
+        discount: discountValue,
+        image: req.file?.path || null,
         sku: await generateSKU(),
         barcode: barcode.trim(),
-
         createdById: parseInt(createdById),
-        categoryId: categoryId ? parseInt(categoryId) : null,
+        categoryId,
       },
     });
 
     res.status(200).json({ message: "Product Created Successfully", product });
   } catch (error) {
-    console.error(error);
+    console.error("Add product error:", error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -96,37 +117,47 @@ const editProduct = async (req, res) => {
       brand,
       costPrice,
       sellingPrice,
+      category, // <-- frontend se category name ayegi
+      discount,
     } = req.body;
+
     const image = req.file?.path;
 
-    let discount;
-    if (costPrice && sellingPrice) {
-      discount = calculateDiscount(
-        parseFloat(costPrice),
-        parseFloat(sellingPrice)
-      );
+    // 🔹 Category name se ID find karo
+    let categoryId;
+    if (category) {
+      const categoryRecord = await prisma.category.findUnique({
+        where: { name: category.trim() },
+      });
+
+      if (!categoryRecord) {
+        return res.status(400).json({ error: "Category not found" });
+      }
+
+      categoryId = categoryRecord.id;
     }
 
+    // 🔹 Product update
     const product = await prisma.product.update({
       where: { id: parseInt(id) },
       data: {
         title,
         description,
-        stock: stock !== undefined ? parseInt(stock) : undefined,
+        stock: stock ? parseInt(stock) : undefined,
         status,
         unit,
         brand,
-        costPrice: costPrice !== undefined ? parseFloat(costPrice) : undefined,
-        sellingPrice:
-          sellingPrice !== undefined ? parseFloat(sellingPrice) : undefined,
-        ...(discount !== undefined && { discount }),
+        costPrice: costPrice ? parseFloat(costPrice) : undefined,
+        sellingPrice: sellingPrice ? parseFloat(sellingPrice) : undefined,
+        discount: discount ? parseFloat(discount) : undefined, // 👈 sirf save karo
         ...(image && { image }),
-        categoryId: categoryId ? parseInt(categoryId) : undefined,
+        ...(categoryId && { categoryId }),
       },
     });
 
     res.status(200).json({ message: "Product updated successfully", product });
   } catch (error) {
+    console.error("Edit Product Error:", error);
     res.status(400).json({ error: error.message });
   }
 };

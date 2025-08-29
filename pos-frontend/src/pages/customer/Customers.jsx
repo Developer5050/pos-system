@@ -30,11 +30,78 @@ const Customers = () => {
       address: "789 Pine Rd, Chicago, IL 60601",
       createdAt: "2023-07-22",
     },
+    {
+      id: 4,
+      firstName: "Emily",
+      lastName: "Davis",
+      email: "emily.davis@example.com",
+      phone: "+1 (555) 456-7890",
+      address: "101 Elm St, Houston, TX 77001",
+      createdAt: "2023-08-05",
+    },
+    {
+      id: 5,
+      firstName: "David",
+      lastName: "Wilson",
+      email: "david.wilson@example.com",
+      phone: "+1 (555) 567-8901",
+      address: "202 Maple Dr, Phoenix, AZ 85001",
+      createdAt: "2023-08-15",
+    },
+    {
+      id: 6,
+      firstName: "Jessica",
+      lastName: "Brown",
+      email: "jessica.brown@example.com",
+      phone: "+1 (555) 678-9012",
+      address: "303 Cedar Ln, Philadelphia, PA 19101",
+      createdAt: "2023-09-01",
+    },
+    {
+      id: 7,
+      firstName: "Daniel",
+      lastName: "Miller",
+      email: "daniel.miller@example.com",
+      phone: "+1 (555) 789-0123",
+      address: "404 Birch St, San Antonio, TX 78201",
+      createdAt: "2023-09-10",
+    },
+    {
+      id: 8,
+      firstName: "Lisa",
+      lastName: "Taylor",
+      email: "lisa.taylor@example.com",
+      phone: "+1 (555) 890-1234",
+      address: "505 Walnut Ave, San Diego, CA 92101",
+      createdAt: "2023-09-20",
+    },
+    {
+      id: 9,
+      firstName: "Mark",
+      lastName: "Anderson",
+      email: "mark.anderson@example.com",
+      phone: "+1 (555) 901-2345",
+      address: "606 Spruce Dr, Dallas, TX 75201",
+      createdAt: "2023-10-05",
+    },
+    {
+      id: 10,
+      firstName: "Amy",
+      lastName: "Thomas",
+      email: "amy.thomas@example.com",
+      phone: "+1 (555) 012-3456",
+      address: "707 Oak St, San Jose, CA 95101",
+      createdAt: "2023-10-15",
+    },
   ]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Filter customers based on search term
   const filteredCustomers = customers.filter((customer) => {
@@ -47,6 +114,18 @@ const Customers = () => {
       customer.address.toLowerCase().includes(searchLower)
     );
   });
+
+  // Get current customers for pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCustomers = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+
+  // Generate page numbers for pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
 
   // Open delete confirmation modal
   const openDeleteModal = (customer) => {
@@ -67,6 +146,11 @@ const Customers = () => {
         customers.filter((customer) => customer.id !== customerToDelete.id)
       );
       closeDeleteModal();
+      
+      // Adjust current page if needed after deletion
+      if (currentCustomers.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     }
   };
 
@@ -85,7 +169,10 @@ const Customers = () => {
               placeholder="Search customers..."
               className="pl-10 pr-4 py-1.5 text-[15px] border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page when searching
+              }}
             />
             <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
           </div>
@@ -122,8 +209,8 @@ const Customers = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredCustomers.length > 0 ? (
-                filteredCustomers.map((customer) => (
+              {currentCustomers.length > 0 ? (
+                currentCustomers.map((customer) => (
                   <tr key={customer.id} className="hover:bg-gray-50">
                     <td className="py-4 px-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {customer.id}
@@ -171,22 +258,50 @@ const Customers = () => {
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Showing <span className="font-medium">1</span> to{" "}
-            <span className="font-medium">{filteredCustomers.length}</span> of{" "}
-            <span className="font-medium">{filteredCustomers.length}</span>{" "}
-            results
+        {filteredCustomers.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
+            <div className="text-sm text-gray-700 mb-4 sm:mb-0">
+              Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
+              <span className="font-medium">
+                {Math.min(indexOfLastItem, filteredCustomers.length)}
+              </span>{" "}
+              of <span className="font-medium">{filteredCustomers.length}</span>{" "}
+              results
+            </div>
+
+            <div className="flex space-x-1">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+
+              {pageNumbers.map((number) => (
+                <button
+                  key={number}
+                  onClick={() => setCurrentPage(number)}
+                  className={`px-3 py-1 border rounded-md text-sm font-medium ${
+                    currentPage === number
+                      ? "text-white bg-blue-600"
+                      : "text-gray-700 bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  {number}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
-          <div className="flex space-x-2">
-            <button className="px-3 py-1 border rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-500">
-              Previous
-            </button>
-            <button className="px-3 py-1 border rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-500">
-              Next
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}

@@ -72,6 +72,76 @@ const Orders = () => {
       paymentMethod: 'Debit Card',
       status: 'Unpaid',
       createdAt: '2023-10-19 09:05'
+    },
+    {
+      id: 1006,
+      customerName: 'Lisa Brown',
+      customerEmail: 'lisa.brown@example.com',
+      customerPhone: '+1 (555) 678-9012',
+      customerAddress: '303 Cedar Ln, Philadelphia, PA 19101',
+      productName: 'Wireless Earbuds',
+      productId: 6,
+      quantity: 2,
+      totalAmount: 129.98,
+      paymentMethod: 'Credit Card',
+      status: 'Paid',
+      createdAt: '2023-10-20 13:45'
+    },
+    {
+      id: 1007,
+      customerName: 'David Miller',
+      customerEmail: 'david.miller@example.com',
+      customerPhone: '+1 (555) 789-0123',
+      customerAddress: '404 Birch St, San Antonio, TX 78201',
+      productName: 'Tablet Stand',
+      productId: 7,
+      quantity: 1,
+      totalAmount: 34.99,
+      paymentMethod: 'PayPal',
+      status: 'Unpaid',
+      createdAt: '2023-10-21 15:20'
+    },
+    {
+      id: 1008,
+      customerName: 'Maria Garcia',
+      customerEmail: 'maria.garcia@example.com',
+      customerPhone: '+1 (555) 890-1234',
+      customerAddress: '505 Walnut Ave, San Diego, CA 92101',
+      productName: 'Webcam',
+      productId: 8,
+      quantity: 1,
+      totalAmount: 69.99,
+      paymentMethod: 'Credit Card',
+      status: 'Paid',
+      createdAt: '2023-10-22 10:30'
+    },
+    {
+      id: 1009,
+      customerName: 'James Wilson',
+      customerEmail: 'james.wilson@example.com',
+      customerPhone: '+1 (555) 901-2345',
+      customerAddress: '606 Spruce Dr, Dallas, TX 75201',
+      productName: 'External Hard Drive',
+      productId: 9,
+      quantity: 1,
+      totalAmount: 119.99,
+      paymentMethod: 'Debit Card',
+      status: 'Paid',
+      createdAt: '2023-10-23 14:15'
+    },
+    {
+      id: 1010,
+      customerName: 'Susan Taylor',
+      customerEmail: 'susan.taylor@example.com',
+      customerPhone: '+1 (555) 012-3456',
+      customerAddress: '707 Oak St, San Jose, CA 95101',
+      productName: 'Wireless Charger',
+      productId: 10,
+      quantity: 3,
+      totalAmount: 89.97,
+      paymentMethod: 'Cash',
+      status: 'Unpaid',
+      createdAt: '2023-10-24 16:50'
     }
   ]);
 
@@ -82,6 +152,10 @@ const Orders = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [orderToView, setOrderToView] = useState(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Filter orders based on date range and status
   const filteredOrders = orders.filter(order => {
@@ -95,10 +169,22 @@ const Orders = () => {
     return inDateRange && matchesStatus;
   });
 
+  // Get current orders for pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  // Generate page numbers for pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
   // Handle filter submission
   const handleFilter = (e) => {
     e.preventDefault();
-    // Filtering is done automatically through state changes
+    setCurrentPage(1); // Reset to first page when filtering
   };
 
   // Toggle order status
@@ -127,6 +213,11 @@ const Orders = () => {
     if (orderToDelete) {
       setOrders(orders.filter(order => order.id !== orderToDelete.id));
       closeDeleteModal();
+      
+      // Adjust current page if needed after deletion
+      if (currentOrders.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     }
   };
 
@@ -212,8 +303,8 @@ const Orders = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredOrders.length > 0 ? (
-                filteredOrders.map(order => (
+              {currentOrders.length > 0 ? (
+                currentOrders.map(order => (
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="py-4 px-4 font-medium text-gray-900">{order.id}</td>
                     <td className="py-4 px-4 text-sm font-bold">{order.customerName}</td>
@@ -260,20 +351,50 @@ const Orders = () => {
         </div>
         
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredOrders.length}</span> of{' '}
-            <span className="font-medium">{filteredOrders.length}</span> results
+        {filteredOrders.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
+            <div className="text-sm text-gray-700 mb-4 sm:mb-0">
+              Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
+              <span className="font-medium">
+                {Math.min(indexOfLastItem, filteredOrders.length)}
+              </span>{" "}
+              of <span className="font-medium">{filteredOrders.length}</span>{" "}
+              results
+            </div>
+
+            <div className="flex space-x-1">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+
+              {pageNumbers.map((number) => (
+                <button
+                  key={number}
+                  onClick={() => setCurrentPage(number)}
+                  className={`px-3 py-1 border rounded-md text-sm font-medium ${
+                    currentPage === number
+                      ? "text-white bg-blue-600"
+                      : "text-gray-700 bg-white hover:bg-gray-50"
+                  }`}
+                >
+                  {number}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
-          <div className="flex space-x-2">
-            <button className="px-3 py-1 border rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-500">
-              Previous
-            </button>
-            <button className="px-3 py-1 border rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-500">
-              Next
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}

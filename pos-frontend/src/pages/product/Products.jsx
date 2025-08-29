@@ -1,39 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 
 const Products = () => {
-  // Sample product data
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      name: "Wireless Headphones",
-      description: "High-quality wireless headphones with noise cancellation",
-      image: "https://placehold.co/600x400",
-      price: 79.99,
-      costPrice: 45.0,
-      quantity: 42,
-      brand: "SoundMax",
-      unit: "piece",
-      discount: 10,
-      status: "Active",
-      createdAt: "2023-05-15",
-      updatedAt: "2023-10-20",
-    },
-    {
-      id: 2,
-      name: "Smart Watch",
-      description: "Smart watch with health monitoring features",
-      image: "https://placehold.co/600x400",
-      price: 199.99,
-      costPrice: 120.0,
-      quantity: 15,
-      brand: "TechWear",
-      unit: "piece",
-      discount: 15,
-      status: "Active",
-      createdAt: "2023-06-10",
-      updatedAt: "2023-10-18",
-    },
-  ]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -42,36 +13,114 @@ const Products = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
-  const [editFormData, setEditFormData] = useState({
-    name: "",
+  const [currentPage, setCurrentPage] = useState(1);
+  const [addFormData, setAddFormData] = useState({
+    title: "",
     description: "",
-    price: "",
+    sellingPrice: "",
     costPrice: "",
-    quantity: "",
+    stock: "",
     brand: "",
     unit: "piece",
-    discount: "",
+    discount: "0",
+    barcode: "",
+    category: "",
     image: "",
     status: "Active",
     imageFile: null,
     imagePreview: "",
   });
 
-  const [addFormData, setAddFormData] = useState({
-    name: "",
+  const [editFormData, setEditFormData] = useState({
+    title: "",
     description: "",
-    price: "",
+    sellingPrice: "",
     costPrice: "",
-    quantity: "",
+    stock: "",
     brand: "",
     unit: "piece",
     discount: "",
-    barcode: "",
+    category: "", // add
     image: "",
     status: "Active",
     imageFile: null,
     imagePreview: "",
   });
+
+  const itemsPerPage = 5; // limit 5
+
+  // Filter products based on search term and status filter
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "All" || product.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  // Slice products for current page
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentProducts = filteredProducts.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  // Generate page numbers for pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          "http://localhost:5000/api/product/get-all-products"
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+          setProducts(data);
+        } else {
+          throw new Error("Invalid data format from API");
+        }
+      } catch (err) {
+        setError(err.message);
+        console.error("Error fetching products:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/category/get-all-category"
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data);
+        }
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+
+    fetchProducts();
+    fetchCategories();
+  }, []);
 
   // Handle image upload for both add and edit forms
   const handleImageUpload = (e, isEditForm = false) => {
@@ -106,14 +155,16 @@ const Products = () => {
   const closeAddModal = () => {
     setIsAddModalOpen(false);
     setAddFormData({
-      name: "",
+      title: "",
       description: "",
-      price: "",
+      sellingPrice: "",
       costPrice: "",
-      quantity: "",
+      stock: "",
       brand: "",
       unit: "piece",
-      discount: "",
+      discount: "0",
+      barcode: "",
+      category: "",
       image: "",
       status: "Active",
       imageFile: null,
@@ -121,20 +172,110 @@ const Products = () => {
     });
   };
 
+  // Calculate discount price addform
+  useEffect(() => {
+    const calculateDiscount = () => {
+      const sellingPrice = parseFloat(addFormData.sellingPrice);
+      const discountPrice = parseFloat(addFormData.costPrice);
+
+      if (sellingPrice && discountPrice && sellingPrice > 0) {
+        if (discountPrice < sellingPrice) {
+          // Normal discount: discount price is lower than selling price
+          const discountPercent =
+            ((sellingPrice - discountPrice) / sellingPrice) * 100;
+          setAddFormData((prev) => ({
+            ...prev,
+            discount: discountPercent.toFixed(2),
+          }));
+        } else if (discountPrice > sellingPrice) {
+          // Price increase: show negative discount (or 0 if you prefer)
+          const discountPercent =
+            ((sellingPrice - discountPrice) / sellingPrice) * 100;
+          setAddFormData((prev) => ({
+            ...prev,
+            discount: discountPercent.toFixed(2), // This will be negative
+          }));
+        } else {
+          // Prices are equal
+          setAddFormData((prev) => ({
+            ...prev,
+            discount: "0",
+          }));
+        }
+      } else {
+        // Reset discount if prices are invalid
+        setAddFormData((prev) => ({
+          ...prev,
+          discount: "0",
+        }));
+      }
+    };
+
+    calculateDiscount();
+  }, [addFormData.sellingPrice, addFormData.costPrice]);
+
+  // Calculate discount price editform
+  useEffect(() => {
+    const calculateDiscount = () => {
+      const sellingPrice = parseFloat(editFormData.sellingPrice);
+      const costPrice = parseFloat(editFormData.costPrice);
+
+      if (sellingPrice && costPrice && sellingPrice > 0) {
+        if (costPrice < sellingPrice) {
+          // Normal discount
+          const discountPercent =
+            ((sellingPrice - costPrice) / sellingPrice) * 100;
+          setEditFormData((prev) => ({
+            ...prev,
+            discount: discountPercent.toFixed(2),
+          }));
+        } else if (costPrice > sellingPrice) {
+          // Price increase → negative discount
+          const discountPercent =
+            ((costPrice - sellingPrice) / sellingPrice) * 100;
+          setEditFormData((prev) => ({
+            ...prev,
+            discount: discountPercent.toFixed(2),
+          }));
+        } else {
+          // Equal prices → 0 discount
+          setEditFormData((prev) => ({
+            ...prev,
+            discount: "0",
+          }));
+        }
+      } else {
+        // Invalid input → reset
+        setEditFormData((prev) => ({
+          ...prev,
+          discount: "0",
+        }));
+      }
+    };
+
+    calculateDiscount();
+  }, [editFormData.sellingPrice, editFormData.costPrice]);
+
+  // Reset to first page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
   // Open edit modal and populate form with product data
   const handleEditClick = (product) => {
     setEditingProduct(product);
     setEditFormData({
-      name: product.name,
+      title: product.title,
       description: product.description,
-      price: product.price,
+      sellingPrice: product.sellingPrice,
       costPrice: product.costPrice,
-      quantity: product.quantity,
+      stock: product.stock,
       brand: product.brand,
       unit: product.unit,
       discount: product.discount,
       image: product.image,
       status: product.status,
+      category: product.category?.name || "", // add
       imageFile: null,
       imagePreview: product.image,
     });
@@ -154,12 +295,26 @@ const Products = () => {
   };
 
   // Handle delete product confirmation
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (productToDelete) {
-      setProducts(
-        products.filter((product) => product.id !== productToDelete.id)
-      );
-      closeDeleteModal();
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/product/delete-product/${productToDelete.id}`,
+          { method: "DELETE" }
+        );
+
+        if (!res.ok) {
+          throw new Error(`Failed to delete product: ${res.status}`);
+        }
+
+        // Update frontend state
+        setProducts(products.filter((p) => p.id !== productToDelete.id));
+        closeDeleteModal();
+        alert("Product deleted successfully ✅");
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        alert("❌ Failed to delete product");
+      }
     }
   };
 
@@ -168,16 +323,16 @@ const Products = () => {
     setIsEditModalOpen(false);
     setEditingProduct(null);
     setEditFormData({
-      name: "",
+      title: "",
       description: "",
-      price: "",
+      sellingPrice: "",
       costPrice: "",
-      quantity: "",
+      stock: "",
       brand: "",
       unit: "piece",
       discount: "",
       image: "",
-      status: "Active",
+      status: "ACTIVE",
       imageFile: null,
       imagePreview: "",
     });
@@ -195,92 +350,128 @@ const Products = () => {
   // Handle form input changes for add modal
   const handleAddInputChange = (e) => {
     const { name, value } = e.target;
-    setAddFormData({
-      ...addFormData,
-      [name]: value,
-    });
-  };
 
-  // Handle edit form submission
-  const handleUpdateSubmit = (e) => {
-    e.preventDefault();
-
-    // For a real application, you would upload the image file to a server here
-    // and get back a URL. For this example, we'll use a placeholder or data URL
-    let imageUrl = editingProduct.image;
-    if (editFormData.imageFile) {
-      // In a real app, this would be the uploaded image URL
-      // For demo purposes, we'll use the data URL directly
-      imageUrl = editFormData.imagePreview;
+    if (name === "costPrice" || name === "sellingPrice") {
+      setAddFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    } else {
+      setAddFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
-
-    // Update the product in the products array
-    const updatedProducts = products.map((product) =>
-      product.id === editingProduct.id
-        ? {
-            ...product,
-            name: editFormData.name,
-            description: editFormData.description,
-            price: parseFloat(editFormData.price),
-            costPrice: parseFloat(editFormData.costPrice),
-            quantity: parseInt(editFormData.quantity),
-            brand: editFormData.brand,
-            unit: editFormData.unit,
-            discount: parseInt(editFormData.discount),
-            status: editFormData.status,
-            image: imageUrl,
-            updatedAt: new Date().toISOString().split("T")[0],
-          }
-        : product
-    );
-
-    setProducts(updatedProducts);
-    handleCloseModal();
   };
 
   // Handle add form submission
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
 
-    // For a real application, you would upload the image file to a server here
-    let imageUrl = "https://placehold.co/600x400"; // default placeholder
-    if (addFormData.imageFile) {
-      // In a real app, this would be the uploaded image URL
-      // For demo purposes, we'll use the data URL directly
-      imageUrl = addFormData.imagePreview;
+    try {
+      setLoading(true);
+
+      const user = JSON.parse(localStorage.getItem("user"));
+      const currentUserId = user?.id;
+
+      if (!currentUserId) {
+        throw new Error("User is not logged in");
+      }
+
+      const formData = new FormData();
+      formData.append("title", addFormData.title);
+      formData.append("brand", addFormData.brand);
+      formData.append("barcode", addFormData.barcode);
+      formData.append("createdById", currentUserId);
+      formData.append("sellingPrice", addFormData.sellingPrice);
+      formData.append("costPrice", addFormData.costPrice);
+      formData.append("stock", addFormData.stock);
+      formData.append("unit", addFormData.unit || "PIECE");
+      formData.append("status", addFormData.status || "ACTIVE");
+      formData.append("description", addFormData.description || "");
+      formData.append("category", addFormData.category || "");
+      formData.append("discount", addFormData.discount || "0");
+
+      if (addFormData.imageFile) {
+        formData.append("image", addFormData.imageFile);
+      }
+
+      const response = await fetch(
+        "http://localhost:5000/api/product/add-product",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      const newProduct = await response.json();
+      setProducts([...products, newProduct.product]);
+
+      toast.success("✅ Product added successfully"); // 👈 toast only once
+      closeAddModal();
+      setCurrentPage(1); // Reset to first page after adding
+    } catch (err) {
+      console.error("Error adding product:", err);
+      toast.error(err.message || "❌ Failed to add product");
+      alert(err.message); // Show error to user
+    } finally {
+      setLoading(false);
     }
-
-    // Add new product to the products array
-    const newProduct = {
-      id: products.length > 0 ? Math.max(...products.map((p) => p.id)) + 1 : 1,
-      name: addFormData.name,
-      description: addFormData.description,
-      price: parseFloat(addFormData.price),
-      costPrice: parseFloat(addFormData.costPrice),
-      quantity: parseInt(addFormData.quantity),
-      brand: addFormData.brand,
-      unit: addFormData.unit,
-      discount: parseInt(addFormData.discount),
-      image: imageUrl,
-      status: addFormData.status,
-      barcode: addFormData.barcode,
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0],
-    };
-
-    setProducts([...products, newProduct]);
-    closeAddModal();
   };
 
-  // Filter products based on search term and status filter
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "All" || product.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Handle edit form submission
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append("title", editFormData.title);
+    formData.append("description", editFormData.description);
+    formData.append("sellingPrice", editFormData.sellingPrice);
+    formData.append("costPrice", editFormData.costPrice);
+    formData.append("stock", editFormData.stock);
+    formData.append("brand", editFormData.brand);
+    formData.append("unit", editFormData.unit);
+    formData.append("discount", editFormData.discount);
+    formData.append("status", editFormData.status);
+    formData.append("category", editFormData.category); // only name
+    if (editFormData.imageFile) {
+      formData.append("image", editFormData.imageFile);
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/product/edit-product/${editingProduct.id}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        // Update frontend state with returned product
+        setProducts((prev) =>
+          prev.map((p) => (p.id === editingProduct.id ? data.product : p))
+        );
+
+        toast.success("✏️ Product updated successfully"); // 👈 toast only once
+        handleCloseModal();
+      } else {
+        console.error("Error:", data.error);
+        toast.error(data.error || "❌ Failed to update product");
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      toast.error("❌ Error updating product");
+    }
+  };
 
   // Handle status toggle
   const toggleStatus = (id) => {
@@ -295,6 +486,17 @@ const Products = () => {
       )
     );
   };
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="p-4 bg-gray-100 min-h-screen font-ubuntu flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen font-ubuntu">
@@ -371,74 +573,82 @@ const Products = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="py-4 px-4 font-medium text-gray-900">
-                      {product.id}
-                    </td>
-                    <td className="py-4 px-4">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-10 h-10 rounded-md object-cover"
-                      />
-                    </td>
-                    <td className="py-4 px-4 font-bold text-sm">
-                      {product.name}
-                    </td>
-                    <td className="py-4 px-4 text-sm">
-                      ${product.price.toFixed(2)}
-                    </td>
-                    <td className="py-4 px-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          product.quantity > 10
-                            ? "bg-green-100 text-green-800"
-                            : product.quantity > 0
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {product.quantity} in stock
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium cursor-pointer ${
-                          product.status === "Active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                        onClick={() => toggleStatus(product.id)}
-                      >
-                        {product.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-sm text-gray-500">
-                      {product.createdAt}
-                    </td>
-                    <td className="py-4 px-4 text-sm text-gray-500">
-                      {product.updatedAt}
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex space-x-2">
-                        <button
-                          className="text-blue-500 hover:text-blue-700"
-                          onClick={() => handleEditClick(product)}
+              {currentProducts.length > 0 ? (
+                currentProducts.map(
+                  (
+                    product // <-- yahan filteredProducts ki jagah currentProducts
+                  ) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="py-4 px-4 font-medium text-gray-900">
+                        {product.id}
+                      </td>
+                      <td className="py-4 px-4">
+                        <img
+                          src={`http://localhost:5000/${product.image}`}
+                          alt={product.name}
+                          className="w-16 h-16 rounded-md object-cover"
+                        />
+                      </td>
+                      <td className="py-4 px-2 font-bold text-[13px]">
+                        {product.title}
+                      </td>
+                      <td className="py-4 px-4 text-sm">
+                        $
+                        {product.sellingPrice !== undefined &&
+                        product.sellingPrice !== null
+                          ? product.sellingPrice.toFixed(2)
+                          : "0.00"}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span
+                          className={`py-1 rounded-full text-xs font-medium ${
+                            product.quantity > 10
+                              ? "bg-green-100 text-green-800"
+                              : product.quantity > 0
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
                         >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button
-                          className="text-red-500 hover:text-red-700"
-                          onClick={() => openDeleteModal(product)}
+                          {product.stock} in stock
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium cursor-pointer ${
+                            product.status === "ACTIVE"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                          onClick={() => toggleStatus(product.id)}
                         >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          {product.status || "ACTIVE"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-2 text-sm text-gray-500">
+                        {product.createdAt}
+                      </td>
+                      <td className="py-4 px-2 text-sm text-gray-500">
+                        {product.updatedAt}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex space-x-2">
+                          <button
+                            className="text-blue-500 hover:text-blue-700"
+                            onClick={() => handleEditClick(product)}
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
+                          <button
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => openDeleteModal(product)}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                )
               ) : (
                 <tr>
                   <td
@@ -454,18 +664,46 @@ const Products = () => {
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Showing <span className="font-medium">1</span> to{" "}
-            <span className="font-medium">{filteredProducts.length}</span> of{" "}
-            <span className="font-medium">{filteredProducts.length} </span>
+        <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between mt-4">
+          <div className="text-sm text-gray-700 mb-4 sm:mb-0">
+            Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
+            <span className="font-medium">
+              {Math.min(startIndex + itemsPerPage, filteredProducts.length)}
+            </span>{" "}
+            of <span className="font-medium">{filteredProducts.length}</span>{" "}
             results
           </div>
-          <div className="flex space-x-2">
-            <button className="px-3 py-1 border rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-500">
+
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Previous
             </button>
-            <button className="px-3 py-1 border rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-500">
+
+            {pageNumbers.map((number) => (
+              <button
+                key={number}
+                onClick={() => setCurrentPage(number)}
+                className={`px-3 py-1 border rounded-md text-sm font-medium ${
+                  currentPage === number
+                    ? "text-white bg-blue-600"
+                    : "text-gray-700 bg-white hover:bg-gray-50"
+                }`}
+              >
+                {number}
+              </button>
+            ))}
+
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Next
             </button>
           </div>
@@ -497,8 +735,8 @@ const Products = () => {
                     </label>
                     <input
                       type="text"
-                      name="name"
-                      value={addFormData.name}
+                      name="title"
+                      value={addFormData.title}
                       onChange={handleAddInputChange}
                       className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
@@ -521,7 +759,22 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Cost Price ($) <span className="text-red-500">*</span>
+                      Selling Price ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="sellingPrice"
+                      value={addFormData.sellingPrice}
+                      onChange={handleAddInputChange}
+                      className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-black mb-1">
+                      Discount Price ($) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -536,27 +789,12 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Selling Price ($) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      name="price"
-                      value={addFormData.price}
-                      onChange={handleAddInputChange}
-                      className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-1">
                       Stock <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
-                      name="quantity"
-                      value={addFormData.quantity}
+                      name="stock"
+                      value={addFormData.stock}
                       onChange={handleAddInputChange}
                       className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
@@ -574,11 +812,11 @@ const Products = () => {
                       className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
-                      <option value="piece">Piece</option>
-                      <option value="kg">Kilogram</option>
-                      <option value="liter">Liter</option>
-                      <option value="meter">Meter</option>
-                      <option value="pack">Pack</option>
+                      <option value="PIECE">PIECE</option>
+                      <option value="KILOGRAM">KILOGRAM</option>
+                      <option value="LITER">LITER</option>
+                      <option value="METER">METER</option>
+                      <option value="PACK">PACK</option>
                     </select>
                   </div>
 
@@ -593,8 +831,8 @@ const Products = () => {
                       className="w-full p-2 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INACTIVE">INACTIVE</option>
                     </select>
                   </div>
 
@@ -604,12 +842,12 @@ const Products = () => {
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       name="discount"
                       value={addFormData.discount}
                       onChange={handleAddInputChange}
-                      min="0"
-                      max="100"
                       className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      readOnly
                     />
                   </div>
 
@@ -624,6 +862,26 @@ const Products = () => {
                       onChange={handleAddInputChange}
                       className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-black mb-1">
+                      Category <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="category"
+                      value={addFormData.category}
+                      onChange={handleAddInputChange}
+                      className="w-full p-2 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map((category) => (
+                        <option key={category._id} value={category.name}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="md:col-span-2">
@@ -721,8 +979,8 @@ const Products = () => {
                     </label>
                     <input
                       type="text"
-                      name="name"
-                      value={editFormData.name}
+                      name="title"
+                      value={editFormData.title}
                       onChange={handleEditInputChange}
                       className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
@@ -745,7 +1003,22 @@ const Products = () => {
 
                   <div>
                     <label className="block text-sm font-bold text-black mb-1">
-                      Cost Price ($) <span className="text-red-500">*</span>
+                      Selling Price ($) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="sellingPrice"
+                      value={editFormData.sellingPrice}
+                      onChange={handleEditInputChange}
+                      className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-black mb-1">
+                      Discount Price ($) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -753,22 +1026,7 @@ const Products = () => {
                       name="costPrice"
                       value={editFormData.costPrice}
                       onChange={handleEditInputChange}
-                      className="w-full p-1.5 border rounded-md  text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-1">
-                      Selling Price ($) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      name="price"
-                      value={editFormData.price}
-                      onChange={handleEditInputChange}
-                      className="w-full p-1.5 border rounded-md text-[14px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                   </div>
@@ -779,11 +1037,10 @@ const Products = () => {
                     </label>
                     <input
                       type="number"
-                      name="quantity"
-                      value={editFormData.quantity}
+                      name="stock"
+                      value={editFormData.stock}
                       onChange={handleEditInputChange}
                       className="w-full p-1.5 border rounded-md text-[14px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
                     />
                   </div>
 
@@ -797,11 +1054,10 @@ const Products = () => {
                       onChange={handleEditInputChange}
                       className="w-full p-1.5 border rounded-md text-[14px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="piece">Piece</option>
-                      <option value="kg">Kilogram</option>
-                      <option value="liter">Liter</option>
-                      <option value="meter">Meter</option>
-                      <option value="pack">Pack</option>
+                      <option value="PIECE">PIECE</option>
+                      <option value="KILOGRAM">KILOGRAM</option>
+                      <option value="LITER">LITER</option>
+                      <option value="PACK">PACK</option>
                     </select>
                   </div>
 
@@ -815,8 +1071,8 @@ const Products = () => {
                       onChange={handleEditInputChange}
                       className="w-full p-1.5 border rounded-md text-[14px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INACTIVE">INACTIVE</option>
                     </select>
                   </div>
 
@@ -829,15 +1085,82 @@ const Products = () => {
                       name="discount"
                       value={editFormData.discount}
                       onChange={handleEditInputChange}
-                      min="0"
-                      max="100"
+                      readOnly
                       className="w-full p-1.5 border rounded-md text-[14px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-black mb-1">
+                      Barcode <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="barcode"
+                      value={addFormData.barcode}
+                      onChange={handleAddInputChange}
+                      className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-black mb-1">
+                      Category <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="category"
+                      value={addFormData.category}
+                      onChange={handleAddInputChange}
+                      className="w-full p-2 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map((category) => (
+                        <option key={category._id} value={category.name}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-bold text-black mb-1">
                       Image <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        {addFormData.imagePreview ? (
+                          <img
+                            src={addFormData.imagePreview}
+                            alt="Preview"
+                            className="w-16 h-16 rounded-md object-cover border"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-md border border-dashed border-gray-300 flex items-center justify-center">
+                            <i className="fas fa-image text-gray-400"></i>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <label className="block">
+                          <span className="sr-only">Choose product image</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, false)}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          />
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          JPG, JPEG, PNG or GIF (Max 2MB)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-black mb-1">
+                      Image
                     </label>
                     <div className="flex items-center space-x-4">
                       <div className="relative">
@@ -868,7 +1191,7 @@ const Products = () => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 <div>
@@ -933,7 +1256,7 @@ const Products = () => {
 
               <p className="text-sm text-gray-500 text-center mb-6">
                 Are you sure you want to delete the product "
-                {productToDelete?.name}"? This action cannot be undone.
+                {productToDelete?.title}"? This action cannot be undone.
               </p>
 
               <div className="flex justify-center space-x-3">

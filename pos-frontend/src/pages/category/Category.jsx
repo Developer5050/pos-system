@@ -11,6 +11,10 @@ const Category = () => {
   const [error, setError] = useState("");
   const [fetchLoading, setFetchLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -53,6 +57,15 @@ const Category = () => {
   const filteredCategories = categories.filter((category) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Get current categories for pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCategories = filteredCategories.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -107,6 +120,7 @@ const Category = () => {
 
       setCategoryName("");
       setError("");
+      setCurrentPage(1); // Reset to first page after adding/editing
     } catch (err) {
       setError(err.message || "Failed to save category. Please try again.");
       console.error("Error saving category:", err);
@@ -154,6 +168,11 @@ const Category = () => {
         // Refresh categories after successful deletion
         await fetchCategories();
         closeDeleteModal();
+        
+        // Adjust current page if needed after deletion
+        if (currentCategories.length === 1 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        }
       } catch (err) {
         setError(err.message || "Failed to delete category. Please try again.");
         console.error("Error deleting category:", err);
@@ -168,6 +187,12 @@ const Category = () => {
     setEditingCategory(null);
     setError("");
   };
+
+  // Generate page numbers for pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen font-ubuntu">
@@ -191,7 +216,10 @@ const Category = () => {
               placeholder="Search categories..."
               className="pl-10 pr-4 py-1.5 text-[15px] border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page when searching
+              }}
             />
             <i className="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
           </div>
@@ -284,8 +312,8 @@ const Category = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredCategories.length > 0 ? (
-                    filteredCategories.map((category) => (
+                  {currentCategories.length > 0 ? (
+                    currentCategories.map((category) => (
                       <tr key={category.id} className="hover:bg-gray-50">
                         <td className="py-4 px-4 font-medium text-gray-900">
                           {category.id}
@@ -340,23 +368,50 @@ const Category = () => {
             </div>
 
             {/* Pagination */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing <span className="font-medium">1</span> to{" "}
-                <span className="font-medium">{filteredCategories.length}</span>{" "}
-                of{" "}
-                <span className="font-medium">{filteredCategories.length}</span>{" "}
-                results
+            {filteredCategories.length > 0 && (
+              <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
+                <div className="text-sm text-gray-700 mb-4 sm:mb-0">
+                  Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
+                  <span className="font-medium">
+                    {Math.min(indexOfLastItem, filteredCategories.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium">{filteredCategories.length}</span>{" "}
+                  results
+                </div>
+                <div className="flex space-x-1">
+                  <button
+                    onClick={() => paginate(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  
+                  {pageNumbers.map(number => (
+                    <button
+                      key={number}
+                      onClick={() => paginate(number)}
+                      className={`px-3 py-1 border rounded-md text-sm font-medium ${
+                        currentPage === number 
+                          ? 'text-white bg-blue-600' 
+                          : 'text-gray-700 bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      {number}
+                    </button>
+                  ))}
+                  
+                  <button
+                    onClick={() => paginate(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-              <div className="flex space-x-2">
-                <button className="px-3 py-1 border rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-500">
-                  Previous
-                </button>
-                <button className="px-3 py-1 border rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-500">
-                  Next
-                </button>
-              </div>
-            </div>
+            )}
           </>
         )}
       </div>

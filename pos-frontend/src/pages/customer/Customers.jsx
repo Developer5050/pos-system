@@ -98,7 +98,7 @@ const Customers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -118,7 +118,10 @@ const Customers = () => {
   // Get current customers for pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentCustomers = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
+  const currentCustomers = filteredCustomers.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
 
   // Generate page numbers for pagination
@@ -146,7 +149,7 @@ const Customers = () => {
         customers.filter((customer) => customer.id !== customerToDelete.id)
       );
       closeDeleteModal();
-      
+
       // Adjust current page if needed after deletion
       if (currentCustomers.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
@@ -261,7 +264,8 @@ const Customers = () => {
         {filteredCustomers.length > 0 && (
           <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
             <div className="text-sm text-gray-700 mb-4 sm:mb-0">
-              Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
+              Showing{" "}
+              <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
               <span className="font-medium">
                 {Math.min(indexOfLastItem, filteredCustomers.length)}
               </span>{" "}
@@ -293,7 +297,9 @@ const Customers = () => {
               ))}
 
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
                 className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >

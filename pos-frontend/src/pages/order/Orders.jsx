@@ -1,377 +1,205 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { FiEye, FiTrash2 } from "react-icons/fi";
 
 const Orders = () => {
-  // Sample order data
-  const [orders, setOrders] = useState([
-    {
-      id: 1001,
-      customerName: 'John Doe',
-      customerEmail: 'john.doe@example.com',
-      customerPhone: '+1 (555) 123-4567',
-      customerAddress: '123 Main St, New York, NY 10001',
-      productName: 'Wireless Headphones',
-      productId: 1,
-      quantity: 1,
-      totalAmount: 79.99,
-      paymentMethod: 'Credit Card',
-      status: 'Paid',
-      createdAt: '2023-10-15 14:30'
-    },
-    {
-      id: 1002,
-      customerName: 'Sarah Smith',
-      customerEmail: 'sarah.smith@example.com',
-      customerPhone: '+1 (555) 234-5678',
-      customerAddress: '456 Oak Ave, Los Angeles, CA 90001',
-      productName: 'Smart Watch',
-      productId: 2,
-      quantity: 1,
-      totalAmount: 199.99,
-      paymentMethod: 'PayPal',
-      status: 'Paid',
-      createdAt: '2023-10-16 10:15'
-    },
-    {
-      id: 1003,
-      customerName: 'Mike Johnson',
-      customerEmail: 'mike.j@example.com',
-      customerPhone: '+1 (555) 345-6789',
-      customerAddress: '789 Pine Rd, Chicago, IL 60601',
-      productName: 'Bluetooth Speaker',
-      productId: 3,
-      quantity: 2,
-      totalAmount: 99.98,
-      paymentMethod: 'Cash',
-      status: 'Unpaid',
-      createdAt: '2023-10-17 16:45'
-    },
-    {
-      id: 1004,
-      customerName: 'Emily Davis',
-      customerEmail: 'emily.davis@example.com',
-      customerPhone: '+1 (555) 456-7890',
-      customerAddress: '101 Elm St, Houston, TX 77001',
-      productName: 'Gaming Mouse',
-      productId: 4,
-      quantity: 1,
-      totalAmount: 59.99,
-      paymentMethod: 'Credit Card',
-      status: 'Paid',
-      createdAt: '2023-10-18 11:20'
-    },
-    {
-      id: 1005,
-      customerName: 'Alex Wilson',
-      customerEmail: 'alex.wilson@example.com',
-      customerPhone: '+1 (555) 567-8901',
-      customerAddress: '202 Maple Dr, Phoenix, AZ 85001',
-      productName: 'Mechanical Keyboard',
-      productId: 5,
-      quantity: 1,
-      totalAmount: 89.99,
-      paymentMethod: 'Debit Card',
-      status: 'Unpaid',
-      createdAt: '2023-10-19 09:05'
-    },
-    {
-      id: 1006,
-      customerName: 'Lisa Brown',
-      customerEmail: 'lisa.brown@example.com',
-      customerPhone: '+1 (555) 678-9012',
-      customerAddress: '303 Cedar Ln, Philadelphia, PA 19101',
-      productName: 'Wireless Earbuds',
-      productId: 6,
-      quantity: 2,
-      totalAmount: 129.98,
-      paymentMethod: 'Credit Card',
-      status: 'Paid',
-      createdAt: '2023-10-20 13:45'
-    },
-    {
-      id: 1007,
-      customerName: 'David Miller',
-      customerEmail: 'david.miller@example.com',
-      customerPhone: '+1 (555) 789-0123',
-      customerAddress: '404 Birch St, San Antonio, TX 78201',
-      productName: 'Tablet Stand',
-      productId: 7,
-      quantity: 1,
-      totalAmount: 34.99,
-      paymentMethod: 'PayPal',
-      status: 'Unpaid',
-      createdAt: '2023-10-21 15:20'
-    },
-    {
-      id: 1008,
-      customerName: 'Maria Garcia',
-      customerEmail: 'maria.garcia@example.com',
-      customerPhone: '+1 (555) 890-1234',
-      customerAddress: '505 Walnut Ave, San Diego, CA 92101',
-      productName: 'Webcam',
-      productId: 8,
-      quantity: 1,
-      totalAmount: 69.99,
-      paymentMethod: 'Credit Card',
-      status: 'Paid',
-      createdAt: '2023-10-22 10:30'
-    },
-    {
-      id: 1009,
-      customerName: 'James Wilson',
-      customerEmail: 'james.wilson@example.com',
-      customerPhone: '+1 (555) 901-2345',
-      customerAddress: '606 Spruce Dr, Dallas, TX 75201',
-      productName: 'External Hard Drive',
-      productId: 9,
-      quantity: 1,
-      totalAmount: 119.99,
-      paymentMethod: 'Debit Card',
-      status: 'Paid',
-      createdAt: '2023-10-23 14:15'
-    },
-    {
-      id: 1010,
-      customerName: 'Susan Taylor',
-      customerEmail: 'susan.taylor@example.com',
-      customerPhone: '+1 (555) 012-3456',
-      customerAddress: '707 Oak St, San Jose, CA 95101',
-      productName: 'Wireless Charger',
-      productId: 10,
-      quantity: 3,
-      totalAmount: 89.97,
-      paymentMethod: 'Cash',
-      status: 'Unpaid',
-      createdAt: '2023-10-24 16:50'
-    }
-  ]);
-
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [orderToView, setOrderToView] = useState(null);
-  
-  // Pagination state
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Filter orders based on date range and status
-  const filteredOrders = orders.filter(order => {
-    const orderDate = new Date(order.createdAt);
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-    
-    const inDateRange = (!start || orderDate >= start) && (!end || orderDate <= end);
-    const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
-    
-    return inDateRange && matchesStatus;
-  });
-
-  // Get current orders for pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-
-  // Generate page numbers for pagination
-  const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pageNumbers.push(i);
-  }
-
-  // Handle filter submission
-  const handleFilter = (e) => {
-    e.preventDefault();
-    setCurrentPage(1); // Reset to first page when filtering
+  // Fetch orders
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        "http://localhost:5000/api/order/get-all-orders"
+      );
+      setOrders(res.data || []);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Toggle order status
-  const toggleStatus = (id) => {
-    setOrders(orders.map(order => 
-      order.id === id 
-        ? { ...order, status: order.status === 'Paid' ? 'Unpaid' : 'Paid' }
-        : order
-    ));
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  // Delete order
+  const confirmDelete = async () => {
+    if (!orderToDelete) return;
+    try {
+      await axios.delete(
+        `http://localhost:5000/api/order/delete-order/${orderToDelete.id}`
+      );
+      setOrders((prev) =>
+        prev.filter((order) => order.id !== orderToDelete.id)
+      );
+      closeDeleteModal();
+    } catch (error) {
+      console.error("Error deleting order:", error);
+    }
   };
 
-  // Open delete confirmation modal
+  // Open/close modals
   const openDeleteModal = (order) => {
     setOrderToDelete(order);
     setDeleteModalOpen(true);
   };
-
-  // Close delete confirmation modal
   const closeDeleteModal = () => {
     setDeleteModalOpen(false);
     setOrderToDelete(null);
   };
-
-  // Handle delete order confirmation
-  const confirmDelete = () => {
-    if (orderToDelete) {
-      setOrders(orders.filter(order => order.id !== orderToDelete.id));
-      closeDeleteModal();
-      
-      // Adjust current page if needed after deletion
-      if (currentOrders.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
-    }
-  };
-
-  // Open view order modal
   const openViewModal = (order) => {
     setOrderToView(order);
     setViewModalOpen(true);
   };
-
-  // Close view order modal
   const closeViewModal = () => {
     setViewModalOpen(false);
     setOrderToView(null);
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(orders.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentOrders = orders.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
-    <div className="p-2 bg-gray-100 min-h-screen font-ubuntu">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Order List</h1>
-        
-        {/* Filter Form */}
-        <form onSubmit={handleFilter} className="bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
-          <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 mt-5">From Date</label>
-              <input
-                type="date"
-                className="p-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 mt-5">To Date</label>
-              <input
-                type="date"
-                className="p-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 mt-5">Status</label>
-              <select
-                className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="All">All Status</option>
-                <option value="Paid">Paid</option>
-                <option value="Unpaid">Unpaid</option>
-              </select>
-            </div>
-            
-            <div className="flex items-end">
-              <button 
-                type="submit"
-                className= "bg-blue-500 hover:bg-blue-600 relative bottom-1 text-white py-1.5 px-4 rounded-md w-full"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
+    <div className="p-4 bg-gray-100 min-h-screen font-ubuntu">
+      <h1 className="text-2xl font-bold mb-4">Orders List</h1>
 
       {/* Orders Table */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-black">
-              <tr>
-                <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">Order ID</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">Customer</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">Product</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">Amount</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">Status</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">Order Date</th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {currentOrders.length > 0 ? (
-                currentOrders.map(order => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="py-4 px-4 font-medium text-gray-900">{order.id}</td>
-                    <td className="py-4 px-4 text-sm font-bold">{order.customerName}</td>
-                    <td className="py-4 px-4 text-sm font-bold">{order.productName}</td>
-                    <td className="py-4 px-4 font-medium">${order.totalAmount.toFixed(2)}</td>
-                    <td className="py-4 px-4">
-                      <span 
-                        className={`px-2 py-1 rounded-full text-xs font-medium cursor-pointer ${
-                          order.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}
-                        onClick={() => toggleStatus(order.id)}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-sm text-gray-500">{order.createdAt.split(' ')[0]}</td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="flex space-x-2 justify-center">
-                        <button 
-                          className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-100"
+        {loading ? (
+          <p className="text-center p-4">Loading orders...</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-black">
+                <tr>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                    Order ID
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                    Customer
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                    Products
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                    Amount
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                    Status
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                    Order Date
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {currentOrders.length > 0 ? (
+                  currentOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="py-4 px-4 text-sm">{order.orderNumber}</td>
+                      <td className="py-4 px-4 font-medium text-[14px]">
+                        {order.customer?.name}
+                      </td>
+                      <td className="py-4 px-4 text-sm">
+                        {order.orderItems
+                          ?.map(
+                            (item) =>
+                              `${item.product?.title} (x${item.quantity})`
+                          )
+                          .join(", ")}
+                      </td>
+                      <td className="py-4 px-4">${order.amount.toFixed(2)}</td>
+                      <td className="py-4 px-4">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            order.status === "PAID"
+                              ? "bg-green-200 text-green-800"
+                              : "bg-yellow-200 text-yellow-800"
+                          }`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        {new Date(order.createdAt).toISOString().split("T")[0]}
+                      </td>
+                      <td className="py-4 px-4 flex space-x-2 mt-3">
+                        <button
+                          className="flex items-center text-blue-500 hover:text-blue-700"
                           onClick={() => openViewModal(order)}
                         >
-                          <i className="fas fa-eye"></i>
+                          <FiEye className="mr-1" />
                         </button>
-                        <button 
-                          className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100"
+                        <button
+                          className="flex items-center text-red-500 hover:text-red-700"
                           onClick={() => openDeleteModal(order)}
                         >
-                          <i className="fas fa-trash"></i>
+                          <FiTrash2 className="mr-1 " />
                         </button>
-                      </div>
+                        <button
+                          className="flex items-center text-green-500 hover:text-green-700"
+                          onClick={() =>
+                            window.open(
+                              `http://localhost:5000/api/receipt/${order.id}`,
+                              "_blank"
+                            )
+                          }
+                        >
+                          🧾
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="text-center py-6 text-gray-500">
+                      No orders found
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" className="py-8 text-center text-gray-500">
-                    No orders found for the selected filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Pagination */}
-        {filteredOrders.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
-            <div className="text-sm text-gray-700 mb-4 sm:mb-0">
-              Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
-              <span className="font-medium">
-                {Math.min(indexOfLastItem, filteredOrders.length)}
-              </span>{" "}
-              of <span className="font-medium">{filteredOrders.length}</span>{" "}
-              results
-            </div>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-            <div className="flex space-x-1">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
+        <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between mt-4">
+          <div className="text-sm text-gray-700 mb-4 sm:mb-0">
+            Showing <span className="font-medium">{indexOfFirstItem + 1}</span>{" "}
+            to{" "}
+            <span className="font-medium">
+              {Math.min(indexOfLastItem, orders.length)}
+            </span>{" "}
+            of <span className="font-medium">{orders.length}</span> results
+          </div>
 
-              {pageNumbers.map((number) => (
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              (number) => (
                 <button
                   key={number}
                   onClick={() => setCurrentPage(number)}
@@ -383,115 +211,153 @@ const Orders = () => {
                 >
                   {number}
                 </button>
-              ))}
+              )
+            )}
 
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md">
-            <div className="p-6">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-              </div>
-              
-              <h3 className="text-lg font-medium text-gray-900 text-center mb-2">
-                Delete Order
-              </h3>
-              
-              <p className="text-sm text-gray-500 text-center mb-6">
-                Are you sure you want to delete order {orderToDelete?.id}? 
-                This action cannot be undone.
-              </p>
-
-              <div className="flex justify-center space-x-3">
-                <button
-                  onClick={closeDeleteModal}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  Delete
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-96">
+            <h3 className="text-lg font-bold mb-4">Delete Order</h3>
+            <p className="mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-bold">{orderToDelete?.orderNumber}</span>?
+            </p>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={closeDeleteModal}
+                className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* View Order Details Modal */}
+      {/* View Order Modal */}
       {viewModalOpen && orderToView && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-800">
-                  Order Details - #{orderToView.id}
-                </h2>
-                <button
-                  onClick={closeViewModal}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <i className="fas fa-times"></i>
-                </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto animate-fadeIn">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-2 border-b border-gray-200 pb-3">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Order Details{" "}
+                <span className="text-gray-800">
+                  # {orderToView.orderNumber}
+                </span>
+              </h2>
+              <button
+                onClick={closeViewModal}
+                className="text-gray-400 hover:text-gray-700 text-xl font-bold transition"
+              >
+                ✖
+              </button>
+            </div>
+
+            {/* Customer Info */}
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Customer Info
+              </h3>
+              <div className="bg-gray-50 p-4 rounded-lg space-y-1">
+                <p className="text-gray-800">
+                  <span className="font-medium">Name:</span>{" "}
+                  {orderToView.customer?.name}
+                </p>
+                <p className="text-gray-800">
+                  <span className="font-medium">Email:</span>{" "}
+                  {orderToView.customer?.email}
+                </p>
+                <p className="text-gray-800">
+                  <span className="font-medium">Phone:</span>{" "}
+                  {orderToView.customer?.phone}
+                </p>
+                <p className="text-gray-800">
+                  <span className="font-medium">Address:</span>{" "}
+                  {orderToView.customer?.address}
+                </p>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Customer Information</h3>
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {orderToView.customerName}</p>
-                    <p><span className="font-medium">Email:</span> {orderToView.customerEmail}</p>
-                    <p><span className="font-medium">Phone:</span> {orderToView.customerPhone}</p>
-                    <p><span className="font-medium">Address:</span> {orderToView.customerAddress}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Order Information</h3>
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Product:</span> {orderToView.productName}</p>
-                    <p><span className="font-medium">Quantity:</span> {orderToView.quantity}</p>
-                    <p><span className="font-medium">Total Amount:</span> ${orderToView.totalAmount.toFixed(2)}</p>
-                    <p><span className="font-medium">Payment Method:</span> {orderToView.paymentMethod}</p>
-                    <p>
-                      <span className="font-medium">Status:</span> 
-                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                        orderToView.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {orderToView.status}
-                      </span>
+            {/* Products */}
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Products
+              </h3>
+              <div className="bg-gray-50 p-2 rounded-lg space-y-1">
+                {orderToView.orderItems?.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex justify-between items-center border-b border-gray-200 last:border-b-0 py-2"
+                  >
+                    <p className="text-gray-800 font-medium">
+                      {item.product?.title}
                     </p>
-                    <p><span className="font-medium">Order Date:</span> {orderToView.createdAt}</p>
+                    <p className="text-gray-600">
+                      {item.quantity} × ${item.price.toFixed(2)}
+                    </p>
                   </div>
-                </div>
+                ))}
               </div>
+            </div>
 
-              <div className="flex justify-end">
-                <button
-                  onClick={closeViewModal}
-                  className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                >
-                  Close
-                </button>
+            {/* Order Summary */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Order Summary
+              </h3>
+              <div className="bg-gray-50 p-4 rounded-lg space-y-1">
+                <p className="text-gray-800">
+                  <span className="font-medium">Amount:</span> $
+                  {orderToView.amount.toFixed(2)}
+                </p>
+                <p className="text-gray-800">
+                  <span className="font-medium">Status:</span>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      orderToView.status === "PAID"
+                        ? "text-green-600 bg-green-200"
+                        : "text-yellow-600 bg-yellow-200"
+                    }`}
+                  >
+                    {orderToView.status}
+                  </span>
+                </p>
+                <p className="text-gray-800">
+                  <span className="font-medium">Order Date:</span>{" "}
+                  {new Date(orderToView.createdAt).toLocaleString()}
+                </p>
               </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end">
+              <button
+                onClick={closeViewModal}
+                className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

@@ -94,7 +94,7 @@ const createOrder = async (req, res) => {
   }
 };
 
-const getOrder = async (req, res) => {
+const getAllOrder = async (req, res) => {
   try {
     const order = await prisma.order.findMany({
       include: {
@@ -129,7 +129,6 @@ const getOrderById = async (req, res) => {
   }
 };
 
-// Delete Order by ID
 const deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -157,5 +156,27 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+const getOrder = async (req, res) => {
+  const { orderId } = req.params;
 
-module.exports = { createOrder, getOrder, getOrderById, deleteOrder };
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: parseInt(orderId) },
+      include: {
+        customer: true,
+        orderItems: { include: { product: true } },
+      },
+    });
+
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    res.json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch order" });
+  }
+};
+
+
+
+module.exports = { createOrder, getAllOrder, getOrderById, deleteOrder, getOrder };

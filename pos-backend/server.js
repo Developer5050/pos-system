@@ -10,7 +10,6 @@ const productRoute = require("./routes/productRoute");
 const categoryRoute = require("./routes/categoryRoute");
 const orderController = require("./routes/orderRoute");
 const customerController = require("./routes/customerRoute");
-const generateReceipt = require("./routes/receiptRoute");
 
 // PORT
 const port = process.env.PORT;
@@ -30,7 +29,6 @@ app.use("/api/product", productRoute);
 app.use("/api/category", categoryRoute);
 app.use("/api/order", orderController);
 app.use("/api/customer", customerController);
-app.use("/api/receipt", generateReceipt);
 
 // Start Server
 app.listen(port, () => {

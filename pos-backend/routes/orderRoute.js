@@ -4,7 +4,7 @@ const {
   createOrder,
   getAllOrder,
   deleteOrder,
-  getOrder
+  getOrderReceipt
 } = require("../controllers/orderController");
 
 // create order route
@@ -14,6 +14,6 @@ router.get("/get-all-orders", getAllOrder);
 // create delete route
 router.delete("/delete-order/:id", deleteOrder);
 // get Order 
-router.get("/get-order", getOrder);
+router.get("/receipt/:orderId", getOrderReceipt);
 
 module.exports = router;

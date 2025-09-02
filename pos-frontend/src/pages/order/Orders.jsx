@@ -140,7 +140,7 @@ const Orders = () => {
                       <td className="py-4 px-4">
                         {new Date(order.createdAt).toISOString().split("T")[0]}
                       </td>
-                      
+
                       <td className="py-4 px-4 flex space-x-2 mt-3">
                         <button
                           className="flex items-center text-blue-500 hover:text-blue-700"
@@ -158,7 +158,7 @@ const Orders = () => {
                           className="flex items-center text-green-500 hover:text-green-700"
                           onClick={() =>
                             window.open(
-                              `http://localhost:5000/api/receipt/${order.id}`,
+                              `http://localhost:5000/api/order/receipt/${order.id}`,
                               "_blank"
                             )
                           }

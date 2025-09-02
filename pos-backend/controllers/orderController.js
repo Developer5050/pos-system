@@ -101,6 +101,7 @@ const getAllOrder = async (req, res) => {
         customer: true,
         orderItems: { include: { product: true } },
       },
+      orderBy: { createdAt: "desc" },
     });
 
     res.status(200).json(order);
@@ -156,7 +157,7 @@ const deleteOrder = async (req, res) => {
   }
 };
 
-const getOrder = async (req, res) => {
+const getOrderReceipt = async (req, res) => {
   const { orderId } = req.params;
 
   try {
@@ -168,15 +169,89 @@ const getOrder = async (req, res) => {
       },
     });
 
-    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!order) return res.status(404).send("Order not found");
 
-    res.json(order);
+    // Generate items HTML
+    const itemsHtml = order.orderItems
+      .map(
+        (item) => `
+      <tr>
+        <td>${item.product.title}</td>
+        <td>${item.quantity}</td>
+        <td>$${item.price.toFixed(2)}</td>
+        <td>$${(item.quantity * item.price).toFixed(2)}</td>
+      </tr>
+    `
+      )
+      .join("");
+
+    const totalAmount = order.orderItems
+      .reduce((acc, item) => acc + item.quantity * item.price, 0)
+      .toFixed(2);
+
+    // Full HTML receipt
+    const html = `
+      <html>
+        <head>
+          <title>Order Receipt</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h2 { text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .total { text-align: right; font-weight: bold; margin-top: 10px; }
+            .customer-info { margin-top: 20px; }
+            button { margin-bottom: 20px; padding: 10px 20px; cursor: pointer; }
+            @media print {
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <button onclick="window.print()">Print Receipt</button>
+          <h2>POS System Receipt</h2>
+          <div class="customer-info">
+            <p><strong>Name:</strong> ${order.customer.name}</p>
+            <p><strong>Email:</strong> ${order.customer.email}</p>
+            <p><strong>Phone:</strong> ${order.customer.phone}</p>
+            <p><strong>Address:</strong> ${order.customer.address}</p>
+            <p><strong>Order Date:</strong> ${new Date(
+              order.createdAt
+            ).toLocaleString()}</p>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <p class="total">Total: $${totalAmount}</p>
+          <p style="text-align:center;">Thank you for your purchase!</p>
+        </body>
+      </html>
+    `;
+
+    res.send(html);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Failed to fetch order" });
+    res.status(500).send("Failed to fetch order");
   }
 };
 
-
-
-module.exports = { createOrder, getAllOrder, getOrderById, deleteOrder, getOrder };
+module.exports = {
+  createOrder,
+  getAllOrder,
+  getOrderById,
+  deleteOrder,
+  getOrderReceipt,
+};

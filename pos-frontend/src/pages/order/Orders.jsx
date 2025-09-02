@@ -49,6 +49,20 @@ const Orders = () => {
     }
   };
 
+  // Update order status
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await axios.put(`http://localhost:5000/api/order/${orderId}/status`, {
+        status: newStatus,
+      });
+      // Local UI update
+      setOrderToView((prev) => ({ ...prev, status: newStatus }));
+      fetchOrders();
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
+  };
+
   // Open/close modals
   const openDeleteModal = (order) => {
     setOrderToDelete(order);
@@ -131,6 +145,8 @@ const Orders = () => {
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
                             order.status === "PAID"
                               ? "bg-green-200 text-green-800"
+                              : order.status === "CANCELLED"
+                              ? "bg-red-200 text-red-800"
                               : "bg-yellow-200 text-yellow-800"
                           }`}
                         >
@@ -180,6 +196,7 @@ const Orders = () => {
           </div>
         )}
 
+        {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between mt-4">
           <div className="text-sm text-gray-700 mb-4 sm:mb-0">
             Showing <span className="font-medium">{indexOfFirstItem + 1}</span>{" "}
@@ -255,7 +272,7 @@ const Orders = () => {
         </div>
       )}
 
-      {/* View Order Modal */}
+      {/* View Order Modal (Update Status Here) */}
       {viewModalOpen && orderToView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto animate-fadeIn">
@@ -322,28 +339,35 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Order Summary */}
+            {/* Order Summary (with Update Status Dropdown) */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 Order Summary
               </h3>
-              <div className="bg-gray-50 p-4 rounded-lg space-y-1">
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                 <p className="text-gray-800">
                   <span className="font-medium">Amount:</span> $
                   {orderToView.amount.toFixed(2)}
                 </p>
-                <p className="text-gray-800">
+
+                <div className="text-gray-800">
                   <span className="font-medium">Status:</span>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      orderToView.status === "PAID"
-                        ? "text-green-600 bg-green-200"
-                        : "text-yellow-600 bg-yellow-200"
-                    }`}
+                  <select
+                    className="ml-3 border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={orderToView.status || ""}
+                    onChange={(e) =>
+                      updateOrderStatus(orderToView.id, e.target.value)
+                    }
                   >
-                    {orderToView.status}
-                  </span>
-                </p>
+                  
+                    <option value="PAID">PAID</option>
+                    <option value="UNPAID">UNPAID</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="CONFIRMED">CONFIRMED</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                  </select>
+                </div>
+
                 <p className="text-gray-800">
                   <span className="font-medium">Order Date:</span>{" "}
                   {new Date(orderToView.createdAt).toLocaleString()}

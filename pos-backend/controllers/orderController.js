@@ -248,10 +248,50 @@ const getOrderReceipt = async (req, res) => {
   }
 };
 
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    const order = await prisma.order.update({
+      where: { id: parseInt(orderId) },
+      data: { status },
+    });
+
+    res.status(200).json(order);
+  } catch (error) {
+    res.status(400).json({
+      error: "Failed to updated Status",
+    });
+  }
+};
+
+const getLatestOrders = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 8; // default 5 orders
+    const orders = await prisma.order.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+      include: {
+        customer: true,
+      },
+    });
+
+    res.json(orders);
+  } catch (error) {
+    console.error("Error fetching latest orders:", error);
+    res.status(500).json({ error: "Failed to fetch latest orders" });
+  }
+};
+
 module.exports = {
   createOrder,
   getAllOrder,
   getOrderById,
   deleteOrder,
   getOrderReceipt,
+  updateOrderStatus,
+  getLatestOrders,
 };

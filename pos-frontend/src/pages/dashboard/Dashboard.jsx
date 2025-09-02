@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Chart as ChartJS,
@@ -25,20 +25,84 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState("daily");
   const [showAllOrders, setShowAllOrders] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [metrics, setMetrics] = useState([
+    { title: "Today's Revenue", value: "$0", icon: "💰" },
+    { title: "Paid Orders", value: "0", icon: "🛒" },
+    { title: "Total Orders", value: "0", icon: "📊" },
+    { title: "New Customers", value: "0", icon: "👥" },
+  ]);
 
-  // Metrics Cards Data
-  const metrics = [
-    { title: "Today's Revenue", value: "$2,482", icon: "💰" },
-    { title: "Today's Orders", value: "48", icon: "🛒" },
-    {
-      title: "Total Orders",
-      value: "143",
-      icon: "📊",
-    },
-    { title: "New Customers", value: "12", icon: "👥" },
-  ];
+  // Fetch all orders from API
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          "http://localhost:5000/api/order/latest?limit=0"
+        ); // fetch all
 
-  // Chart Data
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setOrders(data);
+        setError(null);
+
+        // Update metrics based on API data
+        updateMetrics(data);
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+        setError(
+          "Failed to load orders. Please check if the server is running."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  // Function to update metrics based on API data
+  const updateMetrics = (ordersData) => {
+    if (!ordersData || ordersData.length === 0) return;
+
+    const today = new Date().toISOString().split("T")[0];
+    const todayOrders = ordersData.filter(
+      (order) => order.date && order.date.startsWith(today)
+    );
+
+    const todayRevenue = todayOrders.reduce((sum, order) => {
+      const amount = parseFloat(order.amount) || 0;
+      return sum + amount;
+    }, 0);
+
+    const totalOrders = ordersData.length;
+    const newCustomers = new Set(
+      ordersData.map((order) => order.customer?.name || order.customer)
+    ).size;
+
+    setMetrics([
+      {
+        title: "Today's Revenue",
+        value: `$${todayRevenue.toFixed(2)}`,
+        icon: "💰",
+      },
+      {
+        title: "Paid Orders",
+        value: todayOrders.length.toString(),
+        icon: "🛒",
+      },
+      { title: "Total Orders", value: totalOrders.toString(), icon: "📊" },
+      { title: "New Customers", value: newCustomers.toString(), icon: "👥" },
+    ]);
+  };
+
+  // Chart Data (static for now)
   const chartData = {
     daily: {
       labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
@@ -57,81 +121,7 @@ const Dashboard = () => {
     },
   };
 
-  // Orders Data
-  const orders = [
-    {
-      id: "#1001",
-      customer: "John Doe",
-      amount: "$120.50",
-      status: "Completed",
-      date: "2023-10-25 14:30",
-    },
-    {
-      id: "#1002",
-      customer: "Sarah Smith",
-      amount: "$85.25",
-      status: "Completed",
-      date: "2023-10-25 13:15",
-    },
-    {
-      id: "#1003",
-      customer: "Mike Johnson",
-      amount: "$210.00",
-      status: "Pending",
-      date: "2023-10-25 12:45",
-    },
-    {
-      id: "#1004",
-      customer: "Emily Davis",
-      amount: "$54.75",
-      status: "Completed",
-      date: "2023-10-25 11:20",
-    },
-    {
-      id: "#1005",
-      customer: "Alex Wilson",
-      amount: "$185.30",
-      status: "Refunded",
-      date: "2023-10-25 10:05",
-    },
-    {
-      id: "#1006",
-      customer: "Maria Garcia",
-      amount: "$92.40",
-      status: "Completed",
-      date: "2023-10-24 16:50",
-    },
-    {
-      id: "#1007",
-      customer: "David Brown",
-      amount: "$135.75",
-      status: "Pending",
-      date: "2023-10-24 15:30",
-    },
-    {
-      id: "#1008",
-      customer: "Lisa Miller",
-      amount: "$68.90",
-      status: "Completed",
-      date: "2023-10-24 14:15",
-    },
-    {
-      id: "#1009",
-      customer: "Robert Wilson",
-      amount: "$210.25",
-      status: "Completed",
-      date: "2023-10-24 12:40",
-    },
-    {
-      id: "#1010",
-      customer: "Jennifer Lee",
-      amount: "$45.60",
-      status: "Refunded",
-      date: "2023-10-24 11:05",
-    },
-  ];
-
-  // Low Stock Items Data
+  // Low Stock Items (static for now)
   const lowStockItems = [
     { name: "Coffee Beans", stock: 8 },
     { name: "Paper Cups", stock: 12 },
@@ -154,8 +144,7 @@ const Dashboard = () => {
           timeRange.charAt(0).toUpperCase() + timeRange.slice(1)
         }`,
         font: { size: 16, weight: "bold" },
-        color: "#000000", // Gray-800
-        style: { fontFamily: "Ubuntu, sans-serif" },
+        color: "#000000",
       },
     },
     scales: {
@@ -164,7 +153,7 @@ const Dashboard = () => {
     },
   };
 
-  // chart data configuration
+  // Chart data config
   const chartDataConfig = {
     labels: chartData[timeRange].labels,
     datasets: [
@@ -175,7 +164,7 @@ const Dashboard = () => {
         borderColor: "rgb(59, 130, 246)",
         borderWidth: 1,
         borderRadius: 3,
-        barPercentage: 0.6, // Increased from 0.4 → bars closer
+        barPercentage: 0.6,
       },
       {
         label: "Customers",
@@ -184,11 +173,12 @@ const Dashboard = () => {
         borderColor: "rgb(139, 92, 246)",
         borderWidth: 1,
         borderRadius: 3,
-        barPercentage: 0.6, // Increased from 0.4 → bars closer
+        barPercentage: 0.6,
       },
     ],
   };
 
+  // Show either 5 latest or all
   const displayedOrders = showAllOrders ? orders : orders.slice(0, 5);
 
   return (
@@ -223,9 +213,6 @@ const Dashboard = () => {
                   <h3 className="text-xl font-bold text-gray-800 mt-2">
                     {metric.value}
                   </h3>
-                  <span className="text-green-500 text-sm font-medium">
-                    {metric.change}
-                  </span>
                 </div>
                 <div className="text-3xl">{metric.icon}</div>
               </div>
@@ -233,8 +220,8 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Sales Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
-          {/* Bar Chart */}
           <div className="bg-white rounded-xl shadow p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-gray-800">
@@ -263,9 +250,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Low Stock Items */}
-        {/* Latest Orders */}
+        {/* Latest Orders & Low Stock */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Latest Orders */}
           <div className="bg-white rounded-xl shadow p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-gray-800">Latest Orders</h2>
@@ -276,54 +263,86 @@ const Dashboard = () => {
                 {showAllOrders ? "Show Less" : "View All"}
               </button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-black text-sm border-b">
-                    <th className="pb-3">Order ID</th>
-                    <th className="pb-3">Customer</th>
-                    <th className="pb-3">Amount</th>
-                    <th className="pb-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayedOrders.map((order, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="py-3 text-black font-medium text-[15px]">
-                        {order.id}
-                      </td>
-                      <td className="py-3 font-semibold text-[15px]">
-                        {order.customer}
-                      </td>
-                      <td className="py-3 font-bold text-[15px]">
-                        {order.amount}
-                      </td>
-                      <td className="py-3">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            order.status === "Completed"
-                              ? "bg-green-100 text-green-800"
-                              : order.status === "Pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
+
+            {error && (
+              <div
+                className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4"
+                role="alert"
+              >
+                <p className="font-bold">Notice</p>
+                <p>{error}</p>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="flex justify-center items-center h-40">
+                <div className="animate-pulse text-gray-500">
+                  Loading orders from API...
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-black text-sm border-b">
+                      <th className="pb-3">Order ID</th>
+                      <th className="pb-3">Customer</th>
+                      <th className="pb-3">Amount</th>
+                      <th className="pb-3">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {displayedOrders.length > 0 ? (
+                      displayedOrders.map((order, index) => (
+                        <tr key={index} className="border-b hover:bg-gray-50">
+                          <td className="py-3 text-black font-medium text-[15px]">
+                            {order.id}
+                          </td>
+                          <td className="py-3 font-semibold text-[15px]">
+                            {order.customer?.name || order.customer}
+                          </td>
+                          <td className="py-3 font-bold text-[15px]">
+                            ${order.amount}
+                          </td>
+                          <td className="py-3">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                order.status?.toLowerCase() === "paid"
+                                  ? "bg-green-200 text-green-800"
+                                  : order.status?.toLowerCase() === "pending"
+                                  ? "bg-yellow-200 text-yellow-800"
+                                  : order.status?.toLowerCase() === "cancelled"
+                                  ? "bg-red-200 text-red-800"
+                                  : "bg-gray-200 text-gray-800"
+                              }`}
+                            >
+                              {order.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="4"
+                          className="py-4 text-center text-gray-500"
+                        >
+                          No orders found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
+          {/* Low Stock Alert */}
           <div className="bg-white rounded-xl shadow p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-6">
               Low Stock Alert
             </h2>
 
-            {/* Table Style Grid */}
             <div className="w-full border border-gray-200 rounded-lg overflow-hidden">
               <div className="grid grid-cols-2 bg-gray-100 text-gray-700 font-semibold text-sm">
                 <div className="px-4 py-2">Product</div>
@@ -335,12 +354,9 @@ const Dashboard = () => {
                   key={index}
                   className="grid grid-cols-2 items-center border-t border-gray-200 text-sm"
                 >
-                  {/* Left: Product Name */}
                   <div className="px-4 py-2 text-gray-800 font-medium">
                     {item.name}
                   </div>
-
-                  {/* Right: Stock */}
                   <div className="px-4 py-2 text-right">
                     <span className="bg-red-100 text-red-600 font-bold px-2 py-1.5 rounded-full text-md">
                       {item.stock} left

@@ -10,6 +10,7 @@ const productRoute = require("./routes/productRoute");
 const categoryRoute = require("./routes/categoryRoute");
 const orderController = require("./routes/orderRoute");
 const customerController = require("./routes/customerRoute");
+const dashboardController = require("./routes/statsRoute")
 
 // PORT
 const port = process.env.PORT;
@@ -29,7 +30,7 @@ app.use("/api/product", productRoute);
 app.use("/api/category", categoryRoute);
 app.use("/api/order", orderController);
 app.use("/api/customer", customerController);
-
+app.use("/api/dashboard", dashboardController);
 // Start Server
 app.listen(port, () => {
   console.log(`Server is running at port ${port}`);

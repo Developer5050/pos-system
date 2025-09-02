@@ -32,28 +32,60 @@ const Dashboard = () => {
     { title: "Today's Revenue", value: "$0", icon: "💰" },
     { title: "Paid Orders", value: "0", icon: "🛒" },
     { title: "Total Orders", value: "0", icon: "📊" },
-    { title: "New Customers", value: "0", icon: "👥" },
+    { title: "Total Customers", value: "0", icon: "👥" },
   ]);
+  const [chartData, setChartData] = useState({
+    daily: { labels: [], orders: [], customers: [] },
+    weekly: { labels: [], orders: [], customers: [] },
+    monthly: { labels: [], orders: [], customers: [] },
+  });
+  const [chartLoading, setChartLoading] = useState(true);
 
-  // Fetch all orders from API
+  // Fetch metrics from API
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/dashboard/stats");
+        if (!res.ok) throw new Error("Failed to fetch stats");
+        const data = await res.json();
+
+        setMetrics([
+          {
+            title: "Today's Revenue",
+            value: `$${data.totalRevenue || 0}`,
+            icon: "💰",
+          },
+          { title: "Paid Orders", value: data.paidOrders || 0, icon: "🛒" },
+          { title: "Total Orders", value: data.totalOrders || 0, icon: "📊" },
+          {
+            title: "Total Customers",
+            value: data.totalCustomers || 0,
+            icon: "👥",
+          },
+        ]);
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+        setError(
+          "Failed to load stats. Please check if the server is running."
+        );
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  // Fetch latest orders
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
+        const res = await fetch(
           "http://localhost:5000/api/order/latest?limit=0"
-        ); // fetch all
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
+        );
+        if (!res.ok) throw new Error("Failed to fetch orders");
+        const data = await res.json();
         setOrders(data);
         setError(null);
-
-        // Update metrics based on API data
-        updateMetrics(data);
       } catch (err) {
         console.error("Error fetching orders:", err);
         setError(
@@ -67,61 +99,179 @@ const Dashboard = () => {
     fetchOrders();
   }, []);
 
-  // Function to update metrics based on API data
-  const updateMetrics = (ordersData) => {
-    if (!ordersData || ordersData.length === 0) return;
+  // Process raw data from API
+  const processChartData = (rawData) => {
+    // If API is not available, use mock data
+    if (!rawData || Object.keys(rawData).length === 0) {
+      return {
+        daily: {
+          labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          orders: [45, 52, 38, 61, 55, 68, 72],
+          customers: [12, 15, 10, 18, 14, 20, 22],
+        },
+        weekly: {
+          labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+          orders: [320, 380, 350, 420],
+          customers: [85, 95, 88, 110],
+        },
+        monthly: {
+          labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          orders: [1450, 1620, 1380, 1750, 1920, 2100],
+          customers: [380, 420, 360, 450, 480, 520],
+        },
+      };
+    }
 
-    const today = new Date().toISOString().split("T")[0];
-    const todayOrders = ordersData.filter(
-      (order) => order.date && order.date.startsWith(today)
-    );
+    // For daily data - group by day of week
+    const dailyLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const dailyOrders = new Array(7).fill(0);
+    const dailyCustomers = new Array(7).fill(0);
 
-    const todayRevenue = todayOrders.reduce((sum, order) => {
-      const amount = parseFloat(order.amount) || 0;
-      return sum + amount;
-    }, 0);
+    if (rawData.dailyOrders) {
+      rawData.dailyOrders.forEach((item) => {
+        const dayOfWeek = new Date(item.createdAt).getDay();
+        dailyOrders[dayOfWeek] += item._count?.id || 1;
+      });
+    }
 
-    const totalOrders = ordersData.length;
-    const newCustomers = new Set(
-      ordersData.map((order) => order.customer?.name || order.customer)
-    ).size;
+    if (rawData.dailyCustomers) {
+      rawData.dailyCustomers.forEach((item) => {
+        const dayOfWeek = new Date(item.createdAt).getDay();
+        dailyCustomers[dayOfWeek] += item._count?.id || 1;
+      });
+    }
 
-    setMetrics([
-      {
-        title: "Today's Revenue",
-        value: `$${todayRevenue.toFixed(2)}`,
-        icon: "💰",
+    // For weekly data - group by week
+    const weeklyLabels = ["Week 1", "Week 2", "Week 3", "Week 4"];
+    const weeklyOrders = new Array(4).fill(0);
+    const weeklyCustomers = new Array(4).fill(0);
+
+    if (rawData.weeklyOrders) {
+      rawData.weeklyOrders.forEach((item) => {
+        const date = new Date(item.createdAt);
+        const daysAgo = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
+        const weekIndex = Math.min(3, Math.floor(daysAgo / 7));
+        weeklyOrders[weekIndex] += item._count?.id || 1;
+      });
+    }
+
+    if (rawData.weeklyCustomers) {
+      rawData.weeklyCustomers.forEach((item) => {
+        const date = new Date(item.createdAt);
+        const daysAgo = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
+        const weekIndex = Math.min(3, Math.floor(daysAgo / 7));
+        weeklyCustomers[weekIndex] += item._count?.id || 1;
+      });
+    }
+
+    // For monthly data - group by month
+    const monthlyLabels = [];
+    const monthlyOrders = [];
+    const monthlyCustomers = [];
+
+    // Generate last 6 month names
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const today = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      monthlyLabels.push(months[month.getMonth()]);
+      monthlyOrders.push(0);
+      monthlyCustomers.push(0);
+    }
+
+    if (rawData.monthlyOrders) {
+      rawData.monthlyOrders.forEach((item) => {
+        const date = new Date(item.createdAt);
+        const monthDiff =
+          (today.getFullYear() - date.getFullYear()) * 12 +
+          (today.getMonth() - date.getMonth());
+        if (monthDiff >= 0 && monthDiff < 6) {
+          monthlyOrders[5 - monthDiff] += item._count?.id || 1;
+        }
+      });
+    }
+
+    if (rawData.monthlyCustomers) {
+      rawData.monthlyCustomers.forEach((item) => {
+        const date = new Date(item.createdAt);
+        const monthDiff =
+          (today.getFullYear() - date.getFullYear()) * 12 +
+          (today.getMonth() - date.getMonth());
+        if (monthDiff >= 0 && monthDiff < 6) {
+          monthlyCustomers[5 - monthDiff] += item._count?.id || 1;
+        }
+      });
+    }
+
+    return {
+      daily: {
+        labels: dailyLabels,
+        orders: dailyOrders,
+        customers: dailyCustomers,
       },
-      {
-        title: "Paid Orders",
-        value: todayOrders.length.toString(),
-        icon: "🛒",
+      weekly: {
+        labels: weeklyLabels,
+        orders: weeklyOrders,
+        customers: weeklyCustomers,
       },
-      { title: "Total Orders", value: totalOrders.toString(), icon: "📊" },
-      { title: "New Customers", value: newCustomers.toString(), icon: "👥" },
-    ]);
+      monthly: {
+        labels: monthlyLabels,
+        orders: monthlyOrders,
+        customers: monthlyCustomers,
+      },
+    };
   };
 
-  // Chart Data (static for now)
-  const chartData = {
-    daily: {
-      labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-      orders: [45, 52, 38, 61, 55, 68, 72],
-      customers: [12, 15, 10, 18, 14, 20, 22],
-    },
-    weekly: {
-      labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-      orders: [320, 380, 350, 420],
-      customers: [85, 95, 88, 110],
-    },
-    monthly: {
-      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-      orders: [1450, 1620, 1380, 1750, 1920, 2100],
-      customers: [380, 420, 360, 450, 480, 520],
-    },
-  };
+  // Fetch Chart Stats
+  useEffect(() => {
+    const fetchChartStats = async () => {
+      try {
+        setChartLoading(true);
+        const res = await fetch(
+          "http://localhost:5000/api/dashboard/chart-stats"
+        );
 
-  // Low Stock Items (static for now)
+        let data = {};
+        if (res.ok) {
+          data = await res.json();
+        } else {
+          console.warn("Chart stats API not available, using mock data");
+        }
+
+        // Process the data to group it correctly
+        const processedData = processChartData(data);
+        setChartData(processedData);
+      } catch (err) {
+        console.error("Error fetching chart stats:", err);
+        // Use mock data if API fails
+        const processedData = processChartData({});
+        setChartData(processedData);
+      } finally {
+        setChartLoading(false);
+      }
+    };
+
+    fetchChartStats();
+
+    // Auto refresh every 30 seconds
+    const interval = setInterval(fetchChartStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Low Stock Items
   const lowStockItems = [
     { name: "Coffee Beans", stock: 8 },
     { name: "Paper Cups", stock: 12 },
@@ -137,7 +287,16 @@ const Dashboard = () => {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "top" },
+      legend: {
+        position: "top",
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12,
+          },
+        },
+      },
       title: {
         display: true,
         text: `Sales Overview - ${
@@ -145,45 +304,75 @@ const Dashboard = () => {
         }`,
         font: { size: 16, weight: "bold" },
         color: "#000000",
+        padding: {
+          top: 10,
+          bottom: 20,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        padding: 10,
+        cornerRadius: 5,
+        usePointStyle: true,
       },
     },
     scales: {
-      y: { beginAtZero: true, grid: { color: "rgba(0, 0, 0, 0.1)" } },
-      x: { grid: { color: "rgba(0, 0, 0, 0.1)" } },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: "rgba(0, 0, 0, 0.1)",
+        },
+        ticks: {
+          font: {
+            size: 11,
+          },
+        },
+      },
+      x: {
+        grid: {
+          color: "rgba(0, 0, 0, 0.1)",
+        },
+        ticks: {
+          font: {
+            size: 11,
+          },
+        },
+      },
     },
   };
 
-  // Chart data config
+  // Chart Data Config
   const chartDataConfig = {
-    labels: chartData[timeRange].labels,
+    labels: chartData[timeRange]?.labels || [],
     datasets: [
       {
         label: "Orders",
-        data: chartData[timeRange].orders,
+        data: chartData[timeRange]?.orders || [],
         backgroundColor: "rgba(59, 130, 246, 0.8)",
         borderColor: "rgb(59, 130, 246)",
         borderWidth: 1,
-        borderRadius: 3,
-        barPercentage: 0.6,
+        borderRadius: 5,
+        barPercentage: timeRange === "daily" ? 0.6 : 0.7,
+        categoryPercentage: 0.6,
       },
       {
         label: "Customers",
-        data: chartData[timeRange].customers,
+        data: chartData[timeRange]?.customers || [],
         backgroundColor: "rgba(139, 92, 246, 0.8)",
         borderColor: "rgb(139, 92, 246)",
         borderWidth: 1,
-        borderRadius: 3,
-        barPercentage: 0.6,
+        borderRadius: 5,
+        barPercentage: timeRange === "daily" ? 0.6 : 0.7,
+        categoryPercentage: 0.6,
       },
     ],
   };
 
-  // Show either 5 latest or all
+  // Show either 5 latest or all orders
   const displayedOrders = showAllOrders ? orders : orders.slice(0, 5);
 
   return (
     <div className="flex min-h-screen bg-gray-100 font-ubuntu">
-      {/* Main Content */}
       <div className="flex-1 p-4">
         {/* Header */}
         <header className="flex justify-between items-center mb-8">
@@ -197,8 +386,9 @@ const Dashboard = () => {
               />
               <i className="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
             </div>
-            <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-              JD
+            <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold cursor-pointer"
+              onClick={() => navigate("/cashier")}>
+               C
             </div>
           </div>
         </header>
@@ -245,7 +435,13 @@ const Dashboard = () => {
             </div>
 
             <div className="h-[300px]">
-              <Bar options={chartOptions} data={chartDataConfig} />
+              {chartLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <Bar options={chartOptions} data={chartDataConfig} />
+              )}
             </div>
           </div>
         </div>

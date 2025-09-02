@@ -211,10 +211,22 @@ const Cashier = () => {
       <div className="w-full lg:w-3/5 p-4 lg:p-6 overflow-y-auto">
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-black">Welcome, Ahmad</h1>
-            <p className="text-gray-800">Discover whatever you need easily</p>
+          <div
+            onClick={() => navigate("/dashboard")}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white hover:bg-blue-600 transition">
+              <i className="fa-solid fa-cash-register text-lg"></i>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-black">Welcome, Ahmad</h1>
+              <p className="text-gray-800 text-sm">
+                Discover whatever you need easily
+              </p>
+            </div>
           </div>
+
+          {/* Search + Filter */}
           <div className="flex items-center gap-2">
             <div className="relative w-60 lg:w-72">
               <input
@@ -222,18 +234,18 @@ const Cashier = () => {
                 placeholder="Search Product..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border border-gray-300 rounded-md py-1 pl-9 pr-4 text-[14px] focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full border border-gray-300 rounded-md py-1.5 pl-9 pr-4 text-[15px] focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
-              <FiSearch className="absolute left-3 top-2 text-gray-500 text-md" />
+              <FiSearch className="absolute left-3 top-2.5 text-gray-500 text-md" />
             </div>
-            <button className="p-1.5 border border-gray-300 rounded-lg hover:bg-gray-100">
+            <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-100">
               <FaFilter className="text-gray-600 text-lg" />
             </button>
           </div>
         </div>
 
         {/* Categories */}
-        <div className="flex space-x-5 mb-6 overflow-x-auto pb-2">
+        <div className="flex space-x-4 mb-6 overflow-x-auto pb-4 mt-10">
           {categories.map((cat, idx) => (
             <button
               key={idx}
@@ -458,7 +470,7 @@ const Cashier = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                   Address <span className="text-red-500">*</span>
+                  Address <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   placeholder="Enter delivery address"

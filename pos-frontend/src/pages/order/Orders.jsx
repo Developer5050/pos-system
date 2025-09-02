@@ -14,6 +14,12 @@ const Orders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  // Tax settings
+  const [settings, setSettings] = useState({
+    taxEnabled: true, // enable tax
+    taxRate: 2,       // fixed tax amount
+  });
+
   // Fetch orders
   const fetchOrders = async () => {
     try {
@@ -55,7 +61,6 @@ const Orders = () => {
       await axios.put(`http://localhost:5000/api/order/${orderId}/status`, {
         status: newStatus,
       });
-      // Local UI update
       setOrderToView((prev) => ({ ...prev, status: newStatus }));
       fetchOrders();
     } catch (error) {
@@ -63,7 +68,7 @@ const Orders = () => {
     }
   };
 
-  // Open/close modals
+  // Modals
   const openDeleteModal = (order) => {
     setOrderToDelete(order);
     setDeleteModalOpen(true);
@@ -91,7 +96,6 @@ const Orders = () => {
     <div className="p-4 bg-gray-100 min-h-screen font-ubuntu">
       <h1 className="text-2xl font-bold mb-4">Orders List</h1>
 
-      {/* Orders Table */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         {loading ? (
           <p className="text-center p-4">Loading orders...</p>
@@ -139,7 +143,12 @@ const Orders = () => {
                           )
                           .join(", ")}
                       </td>
-                      <td className="py-4 px-4">${order.amount.toFixed(2)}</td>
+                      <td className="py-4 px-4">
+                        ${(
+                          order.amount +
+                          (settings.taxEnabled ? Number(settings.taxRate || 0) : 0)
+                        ).toFixed(2)}
+                      </td>
                       <td className="py-4 px-4">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -156,7 +165,6 @@ const Orders = () => {
                       <td className="py-4 px-4">
                         {new Date(order.createdAt).toISOString().split("T")[0]}
                       </td>
-
                       <td className="py-4 px-4 flex space-x-2 mt-3">
                         <button
                           className="flex items-center text-blue-500 hover:text-blue-700"
@@ -245,7 +253,7 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       {deleteModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg p-6 w-96">
@@ -272,17 +280,14 @@ const Orders = () => {
         </div>
       )}
 
-      {/* View Order Modal (Update Status Here) */}
+      {/* View Modal */}
       {viewModalOpen && orderToView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto animate-fadeIn">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
             {/* Header */}
             <div className="flex justify-between items-center mb-2 border-b border-gray-200 pb-3">
               <h2 className="text-2xl font-bold text-gray-800">
-                Order Details{" "}
-                <span className="text-gray-800">
-                  # {orderToView.orderNumber}
-                </span>
+                Order Details # {orderToView.orderNumber}
               </h2>
               <button
                 onClick={closeViewModal}
@@ -339,7 +344,7 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Order Summary (with Update Status Dropdown) */}
+            {/* Order Summary */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 Order Summary
@@ -347,7 +352,12 @@ const Orders = () => {
               <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                 <p className="text-gray-800">
                   <span className="font-medium">Amount:</span> $
-                  {orderToView.amount.toFixed(2)}
+                  {(
+                    orderToView.amount +
+                    (settings.taxEnabled
+                      ? Number(settings.taxRate || 0)
+                      : 0)
+                  ).toFixed(2)}
                 </p>
 
                 <div className="text-gray-800">
@@ -359,7 +369,6 @@ const Orders = () => {
                       updateOrderStatus(orderToView.id, e.target.value)
                     }
                   >
-                  
                     <option value="PAID">PAID</option>
                     <option value="UNPAID">UNPAID</option>
                     <option value="PENDING">PENDING</option>
@@ -375,7 +384,6 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="flex justify-end">
               <button
                 onClick={closeViewModal}

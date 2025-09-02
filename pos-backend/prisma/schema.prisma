@@ -130,3 +130,41 @@ model Customer {
 }
 
 
+model Settings {
+  id                   Int      @id @default(autoincrement())
+  // General
+  businessName         String   @default("My POS Business")
+  currency             String   @default("USD")
+  timezone             String   @default("UTC-5")
+  dateFormat           String   @default("MM/DD/YYYY")
+  language             String   @default("English")
+
+  // Receipt
+  printReceipts        Boolean  @default(true)
+  receiptHeader        String   @default("Thank you for your business!")
+  receiptFooter        String   @default("Returns accepted within 30 days")
+  printTaxId           Boolean  @default(true)
+  taxId                String   @default("TAX-123456789")
+
+  // Tax
+  taxEnabled           Boolean  @default(true)
+  taxRate              Float    @default(0)
+  taxInclusive         Boolean  @default(false)
+
+  // Payment
+  cashPayment          Boolean  @default(true)
+  cardPayment          Boolean  @default(true)
+  digitalWallet        Boolean  @default(true)
+  allowPartialPayments Boolean  @default(false)
+
+  // Inventory
+  lowStockAlert        Boolean  @default(true)
+  lowStockThreshold    Int      @default(10)
+  allowNegativeInventory Boolean @default(false)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+
+

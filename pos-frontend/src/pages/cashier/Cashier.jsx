@@ -28,6 +28,53 @@ const Cashier = () => {
     paymentMethod: "COD",
   });
 
+  // Settings state (tax & discount)
+  const [settings, setSettings] = useState({
+    taxEnabled: false,
+    taxRate: 0,
+    taxInclusive: false,
+    discount: 0,
+  });
+
+  // Load settings from localStorage or backend
+  useEffect(() => {
+    const local = localStorage.getItem("taxSettings");
+    if (local) {
+      const parsed = JSON.parse(local);
+      setSettings({
+        taxEnabled: parsed.taxEnabled,
+        taxRate: Number(parsed.taxRate || 0),
+        taxInclusive: parsed.taxInclusive,
+        discount: Number(parsed.discount || 0),
+      });
+    }
+
+    const fetchSettings = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:5000/api/setting/tax-setting"
+        );
+        const data = {
+          taxEnabled: res.data.taxEnabled,
+          taxRate: Number(res.data.taxRate || 0),
+          taxInclusive: res.data.taxInclusive,
+          discount: Number(res.data.discount || 0),
+        };
+        setSettings((prev) => ({ ...prev, ...data }));
+        localStorage.setItem("taxSettings", JSON.stringify(data));
+      } catch (err) {
+        console.error("Failed to fetch settings", err);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  // Update localStorage whenever settings change
+  useEffect(() => {
+    localStorage.setItem("taxSettings", JSON.stringify(settings));
+  }, [settings]);
+
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
@@ -123,13 +170,20 @@ const Cashier = () => {
       })
     );
 
-  // Totals
   const subtotal = orderItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  const discount = 5.0;
-  const tax = subtotal * 0.06;
+
+  const discount = settings.discount || 0;
+
+  // Correct tax calculation
+  const tax = settings.taxEnabled
+    ? settings.taxInclusive
+      ? subtotal - subtotal / (1 + settings.taxRate / 100)
+      : subtotal * (settings.taxRate / 100)
+    : 0;
+
   const total = subtotal - discount + tax;
 
   // Place order
@@ -143,7 +197,6 @@ const Cashier = () => {
       toast.error("Please fill in all required customer details!");
       return;
     }
-
     if (orderItems.length === 0) {
       toast.error("Your order is empty!");
       return;
@@ -159,6 +212,9 @@ const Cashier = () => {
         quantity: item.quantity,
         price: item.price,
       })),
+      subtotal,
+      discount,
+      tax,
       totalAmount: total,
       paymentMethod: userDetails.paymentMethod || "COD",
     };
@@ -204,6 +260,10 @@ const Cashier = () => {
         <div className="text-xl text-red-500">Error: {error}</div>
       </div>
     );
+
+  if (isLoading || !settings.taxEnabled) {
+    return <div>Loading settings...</div>;
+  }
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gray-50 font-ubuntu">
@@ -295,7 +355,13 @@ const Cashier = () => {
                     {product.unit || "1 pcs"}
                   </span>
                 </div>
-                <button className="w-full py-1.5 mt-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
+                <button
+                  className="w-full py-1.5 mt-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addToOrder(product);
+                  }}
+                >
                   Add to Order
                 </button>
               </div>
@@ -379,7 +445,8 @@ const Cashier = () => {
         )}
 
         {/* Totals */}
-        <div className="border-t border-blue-200 pt-3 space-y-1 text-sm">
+        <div className="border-t border-blue-200 pt-3 space-y-3 text-sm p-4 bg-white rounded-lg shadow">
+          {/* Subtotal */}
           <div className="flex justify-between">
             <span className="text-black text-[15px] font-semibold">
               Subtotal
@@ -388,23 +455,37 @@ const Cashier = () => {
               ${subtotal.toFixed(2)}
             </span>
           </div>
-          <div className="flex justify-between">
+
+          {/* Discount (always 0) */}
+          <div className="flex justify-between items-center">
             <span className="text-black font-semibold text-[15px]">
-              Discount sales
+              Discount
             </span>
-            <span className="text-black font-medium">
-              -${discount.toFixed(2)}
-            </span>
+            <span className="text-black font-medium">$0.00</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-black font-semibold text-[15px]">
-              Total sales tax
-            </span>
-            <span className="font-medium text-black">${tax.toFixed(2)}</span>
-          </div>
+
+          {/* Tax (fixed from settings) */}
+          {settings.taxEnabled && (
+            <div className="flex justify-between">
+              <span className="text-black font-semibold text-[15px]">Tax</span>
+              <span className="font-medium text-black">
+                %{Number(settings.taxRate || 0).toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          {/* Total */}
           <div className="flex justify-between pt-2 border-t border-blue-200 font-bold text-black text-[18px]">
             <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span>
+              $
+              {subtotal > 0
+                ? (
+                    subtotal +
+                    (settings.taxEnabled ? Number(settings.taxRate || 0) : 0)
+                  ).toFixed(2)
+                : "0.00"}
+            </span>
           </div>
         </div>
 
@@ -523,7 +604,6 @@ const Cashier = () => {
         </div>
       )}
 
-      {/* Toast Container */}
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );

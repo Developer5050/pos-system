@@ -8,9 +8,10 @@ const path = require("path");
 const authRoute = require("./routes/authRoute");
 const productRoute = require("./routes/productRoute");
 const categoryRoute = require("./routes/categoryRoute");
-const orderController = require("./routes/orderRoute");
-const customerController = require("./routes/customerRoute");
-const dashboardController = require("./routes/statsRoute")
+const orderRoute = require("./routes/orderRoute");
+const customerRoute = require("./routes/customerRoute");
+const dashboardRoute = require("./routes/statsRoute");
+const settingRoute = require("./routes/settingRoutes");
 
 // PORT
 const port = process.env.PORT;
@@ -28,9 +29,11 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/user/auth", authRoute);
 app.use("/api/product", productRoute);
 app.use("/api/category", categoryRoute);
-app.use("/api/order", orderController);
-app.use("/api/customer", customerController);
-app.use("/api/dashboard", dashboardController);
+app.use("/api/order", orderRoute);
+app.use("/api/customer", customerRoute);
+app.use("/api/dashboard", dashboardRoute);
+app.use("/api/setting", settingRoute);
+
 // Start Server
 app.listen(port, () => {
   console.log(`Server is running at port ${port}`);

@@ -209,9 +209,8 @@ const Cashier = () => {
       : discountedSubtotal * (settings.taxRate / 100)
     : 0;
 
-  const total = settings.taxInclusive
-    ? discountedSubtotal
-    : discountedSubtotal + tax;
+  // ✅ Ab total hamesha subtotal (after discount) + tax hoga
+  const total = discountedSubtotal + tax;
 
   // Place order
   const handlePlaceOrder = async () => {
@@ -465,7 +464,6 @@ const Cashier = () => {
                     <p className="text-gray-600 font-medium text-sm">
                       ${Number(item.price).toFixed(2)}
                     </p>
-                    <p className="text-xs text-gray-500">Stock: {item.stock}</p>
                   </div>
                 </div>
 
@@ -521,7 +519,7 @@ const Cashier = () => {
           </div>
 
           {/* Discount */}
-          {settings.discount > 0 && (
+          {/* {settings.discount > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-black font-semibold text-[15px]">
                 Discount ({settings.discount}%)
@@ -530,7 +528,7 @@ const Cashier = () => {
                 -${discountAmount.toFixed(2)}
               </span>
             </div>
-          )}
+          )} */}
 
           {/* Tax */}
           {settings.taxEnabled && (
@@ -543,17 +541,19 @@ const Cashier = () => {
             </div>
           )}
 
+          <hr className="border-blue-200 text-sm bg-white" />
+
           {/* Total */}
-          <div className="flex justify-between pt-2 border-t border-blue-200 font-bold text-black text-[18px]">
-            <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+          <div className="flex justify-between text-[15px]">
+            <span className="font-semibold">Total:</span>
+            <span className="text-black font-bold">${total.toFixed(2)}</span>
           </div>
         </div>
 
         <button
           className={`mt-4 text-white py-1.5 rounded-md font-semibold transition-colors text-sm lg:text-base ${
             orderItems.length === 0
-              ? "bg-gray-400 cursor-not-allowed"
+              ? "bg-blue-600 hover:bg-blue-700 cursor-not-allowed"
               : "bg-blue-600 hover:bg-blue-700"
           }`}
           disabled={orderItems.length === 0}

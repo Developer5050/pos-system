@@ -27,7 +27,6 @@ const getTaxSetting = async (req, res) => {
   }
 };
 
-
 const updateTaxSetting = async (req, res) => {
   let { taxEnabled, taxRate, taxInclusive } = req.body;
 
@@ -54,4 +53,36 @@ const updateTaxSetting = async (req, res) => {
   }
 };
 
-module.exports = { getTaxSetting, updateTaxSetting };
+const inventorySetting = async (req, res) => {
+  try {
+    let setting = await prisma.settings.findFirst();
+    if (!setting) {
+      // default create if not exists
+      setting = await prisma.settings.create({
+        data: { lowStockAlert: true, lowStockThreshold: 10 },
+      });
+    }
+    res.json(setting);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch settings" });
+  }
+};
+
+const inventorySettingUpdate = async (req, res) => {
+   try {
+    const { lowStockAlert, lowStockThreshold } = req.body;
+
+    const updated = await prisma.settings.updateMany({
+      data: {
+        lowStockAlert,
+        lowStockThreshold: Number(lowStockThreshold),
+      },
+    });
+
+    res.json({ success: true, updated });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update settings" });
+  }
+}
+
+module.exports = { getTaxSetting, updateTaxSetting, inventorySetting, inventorySettingUpdate };

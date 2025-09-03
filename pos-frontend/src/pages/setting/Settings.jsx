@@ -2,32 +2,32 @@ import React, { useState, useEffect } from "react";
 
 const Settings = () => {
   const [settings, setSettings] = useState({
-    // General Settings
+    // General
     businessName: "My POS Business",
     currency: "USD",
     timezone: "UTC-5",
     dateFormat: "MM/DD/YYYY",
     language: "English",
 
-    // Receipt Settings
+    // Receipt
     printReceipts: true,
     receiptHeader: "Thank you for your business!",
     receiptFooter: "Returns accepted within 30 days",
     printTaxId: true,
     taxId: "TAX-123456789",
 
-    // Tax Settings
+    // Tax
     taxEnabled: true,
     taxRate: 0,
     taxInclusive: false,
 
-    // Payment Settings
+    // Payment
     cashPayment: true,
     cardPayment: true,
     digitalWallet: true,
     allowPartialPayments: false,
 
-    // Inventory Settings
+    // Inventory
     lowStockAlert: true,
     lowStockThreshold: 10,
     allowNegativeInventory: false,
@@ -36,22 +36,28 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState("general");
   const [saveStatus, setSaveStatus] = useState("");
 
-  // Fetch settings on mount
+  // Fetch settings from backend
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        // Fetch tax settings
         const taxRes = await fetch(
           "http://localhost:5000/api/setting/tax-setting"
         );
         const taxData = await taxRes.json();
-        
-        // In a real app, you would fetch other settings too
+
+        const inventoryRes = await fetch(
+          "http://localhost:5000/api/setting/inventory-setting"
+        );
+        const inventoryData = await inventoryRes.json();
+
         setSettings((prev) => ({
           ...prev,
           taxEnabled: taxData.taxEnabled,
           taxRate: taxData.taxRate,
           taxInclusive: taxData.taxInclusive,
+          lowStockAlert: inventoryData.lowStockAlert,
+          lowStockThreshold: inventoryData.lowStockThreshold,
+          allowNegativeInventory: inventoryData.allowNegativeInventory,
         }));
       } catch (error) {
         console.error("Failed to fetch settings", error);
@@ -61,7 +67,7 @@ const Settings = () => {
     fetchSettings();
   }, []);
 
-  // Handle input changes
+  // Handle input change
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setSettings((prev) => ({
@@ -70,40 +76,35 @@ const Settings = () => {
     }));
   };
 
-  // Handle form submission
+  // Save settings
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaveStatus("Saving...");
 
     try {
-      // Save tax settings
-      const res = await fetch(
-        "http://localhost:5000/api/setting/tax-settings-update",
+      await fetch("http://localhost:5000/api/setting/tax-settings-update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taxEnabled: settings.taxEnabled,
+          taxRate: Number(settings.taxRate),
+          taxInclusive: settings.taxInclusive,
+        }),
+      });
+
+      await fetch(
+        "http://localhost:5000/api/setting/inventory-settings-update",
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            taxEnabled: settings.taxEnabled,
-            taxRate: Number(settings.taxRate),
-            taxInclusive: settings.taxInclusive,
+            lowStockAlert: settings.lowStockAlert,
+            lowStockThreshold: Number(settings.lowStockThreshold),
+            allowNegativeInventory: settings.allowNegativeInventory,
           }),
         }
       );
 
-      if (!res.ok) throw new Error("Failed to save settings");
-
-      // Save to localStorage for Cashier page
-      localStorage.setItem(
-        "taxSettings",
-        JSON.stringify({
-          taxEnabled: settings.taxEnabled,
-          taxRate: Number(settings.taxRate),
-          taxInclusive: settings.taxInclusive,
-        })
-      );
-
-      // In a real app, you would save other settings to their respective endpoints
-      
       setSaveStatus("Settings saved successfully!");
     } catch (error) {
       console.error(error);
@@ -127,13 +128,13 @@ const Settings = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800">System Settings</h1>
-          <p className="text-gray-600 text-sm mt-0.5">
+          <p className="text-gray-600 text-sm">
             Configure your POS system settings
           </p>
         </div>
 
-        {/* Settings Tabs */}
-        <div className="bg-white rounded-lg shadow mb-6">
+        {/* Tabs */}
+        <div className="bg-white rounded-lg shadow">
           <div className="border-b border-gray-200">
             <nav className="flex overflow-x-auto">
               {tabs.map((tab) => (
@@ -153,7 +154,7 @@ const Settings = () => {
             </nav>
           </div>
 
-          {/* Settings Form */}
+          {/* Form */}
           <form onSubmit={handleSubmit} className="p-6">
             {saveStatus && (
               <div
@@ -169,9 +170,10 @@ const Settings = () => {
               </div>
             )}
 
-            {/* General Settings */}
+            {/* === General Tab === */}
             {activeTab === "general" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Business Name */}
                 <div>
                   <label className="block text-md font-medium text-black mb-2">
                     Business Name
@@ -181,10 +183,11 @@ const Settings = () => {
                     name="businessName"
                     value={settings.businessName}
                     onChange={handleInputChange}
-                    className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                
+
+                {/* Currency */}
                 <div>
                   <label className="block text-md font-medium text-black mb-2">
                     Currency
@@ -193,7 +196,7 @@ const Settings = () => {
                     name="currency"
                     value={settings.currency}
                     onChange={handleInputChange}
-                    className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="USD">USD ($)</option>
                     <option value="EUR">EUR (€)</option>
@@ -201,40 +204,8 @@ const Settings = () => {
                     <option value="JPY">JPY (¥)</option>
                   </select>
                 </div>
-                
-                <div>
-                  <label className="block text-md font-medium text-black mb-2">
-                    Timezone
-                  </label>
-                  <select
-                    name="timezone"
-                    value={settings.timezone}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="UTC-5">EST (UTC-5)</option>
-                    <option value="UTC-6">CST (UTC-6)</option>
-                    <option value="UTC-7">MST (UTC-7)</option>
-                    <option value="UTC-8">PST (UTC-8)</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-md font-medium text-black mb-2">
-                    Date Format
-                  </label>
-                  <select
-                    name="dateFormat"
-                    value={settings.dateFormat}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                  </select>
-                </div>
-                
+
+                {/* Language */}
                 <div>
                   <label className="block text-md font-medium text-black mb-2">
                     Language
@@ -243,18 +214,57 @@ const Settings = () => {
                     name="language"
                     value={settings.language}
                     onChange={handleInputChange}
-                    className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="English">English</option>
                     <option value="Spanish">Spanish</option>
                     <option value="French">French</option>
                     <option value="German">German</option>
+                    <option value="Chinese">Chinese</option>
+                    <option value="Urdu">Urdu</option>
+                  </select>
+                </div>
+
+                {/* Timezone */}
+                <div>
+                  <label className="block text-md font-medium text-black mb-2">
+                    Timezone
+                  </label>
+                  <select
+                    name="timezone"
+                    value={settings.timezone}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="UTC-12">UTC-12</option>
+                    <option value="UTC-8">UTC-8 (PST)</option>
+                    <option value="UTC-5">UTC-5 (EST)</option>
+                    <option value="UTC+1">UTC+1 (CET)</option>
+                    <option value="UTC+5">UTC+5 (PKT)</option>
+                    <option value="UTC+8">UTC+8 (CST)</option>
+                  </select>
+                </div>
+
+                {/* Date Format */}
+                <div>
+                  <label className="block text-md font-medium text-black mb-2">
+                    Date Format
+                  </label>
+                  <select
+                    name="dateFormat"
+                    value={settings.dateFormat}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
                   </select>
                 </div>
               </div>
             )}
 
-            {/* Receipt Settings */}
+            {/* === Receipt Tab === */}
             {activeTab === "receipt" && (
               <div className="grid grid-cols-1 gap-6">
                 <div className="flex items-center">
@@ -264,77 +274,45 @@ const Settings = () => {
                     name="printReceipts"
                     checked={settings.printReceipts}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                   />
                   <label
                     htmlFor="printReceipts"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 text-sm text-gray-700"
                   >
                     Automatically print receipts
                   </label>
                 </div>
-                
+
                 <div>
                   <label className="block text-md font-medium text-black mb-2">
                     Receipt Header
                   </label>
-                  <textarea
+                  <input
+                    type="text"
                     name="receiptHeader"
                     value={settings.receiptHeader}
                     onChange={handleInputChange}
-                    rows="2"
-                    className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border rounded-md"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-md font-medium text-black mb-2">
                     Receipt Footer
                   </label>
-                  <textarea
+                  <input
+                    type="text"
                     name="receiptFooter"
                     value={settings.receiptFooter}
                     onChange={handleInputChange}
-                    rows="2"
-                    className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border rounded-md"
                   />
                 </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="printTaxId"
-                    name="printTaxId"
-                    checked={settings.printTaxId}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="printTaxId"
-                    className="ml-2 block text-sm text-gray-700"
-                  >
-                    Print Tax ID on receipts
-                  </label>
-                </div>
-                
-                {settings.printTaxId && (
-                  <div>
-                    <label className="block text-md font-medium text-black mb-2">
-                      Tax ID
-                    </label>
-                    <input
-                      type="text"
-                      name="taxId"
-                      value={settings.taxId}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                )}
               </div>
             )}
 
-            {/* Tax Settings */}
+            {/* === Tax Tab === */}
             {activeTab === "tax" && (
               <div className="grid grid-cols-1 gap-6">
                 <div className="flex items-center">
@@ -344,15 +322,16 @@ const Settings = () => {
                     name="taxEnabled"
                     checked={settings.taxEnabled}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                   />
                   <label
                     htmlFor="taxEnabled"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 text-sm text-gray-700"
                   >
                     Enable tax calculation
                   </label>
                 </div>
+
                 {settings.taxEnabled && (
                   <>
                     <div>
@@ -364,10 +343,7 @@ const Settings = () => {
                         name="taxRate"
                         value={settings.taxRate}
                         onChange={handleInputChange}
-                        min="0"
-                        max="30"
-                        step="0.1"
-                        className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-2 border rounded-md"
                       />
                     </div>
                     <div className="flex items-center">
@@ -377,13 +353,13 @@ const Settings = () => {
                         name="taxInclusive"
                         checked={settings.taxInclusive}
                         onChange={handleInputChange}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                       />
                       <label
                         htmlFor="taxInclusive"
-                        className="ml-2 block text-sm text-gray-700"
+                        className="ml-2 text-sm text-gray-700"
                       >
-                        Prices include tax
+                        Tax Inclusive Pricing
                       </label>
                     </div>
                   </>
@@ -391,7 +367,7 @@ const Settings = () => {
               </div>
             )}
 
-            {/* Payment Settings */}
+            {/* === Payment Tab === */}
             {activeTab === "payment" && (
               <div className="grid grid-cols-1 gap-6">
                 <div className="flex items-center">
@@ -401,16 +377,15 @@ const Settings = () => {
                     name="cashPayment"
                     checked={settings.cashPayment}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                   />
                   <label
                     htmlFor="cashPayment"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 text-sm text-gray-700"
                   >
-                    Accept cash payments
+                    Enable Cash Payments
                   </label>
                 </div>
-                
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -418,16 +393,15 @@ const Settings = () => {
                     name="cardPayment"
                     checked={settings.cardPayment}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                   />
                   <label
                     htmlFor="cardPayment"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 text-sm text-gray-700"
                   >
-                    Accept card payments
+                    Enable Card Payments
                   </label>
                 </div>
-                
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -435,36 +409,19 @@ const Settings = () => {
                     name="digitalWallet"
                     checked={settings.digitalWallet}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                   />
                   <label
                     htmlFor="digitalWallet"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 text-sm text-gray-700"
                   >
-                    Accept digital wallets (Apple Pay, Google Pay)
-                  </label>
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="allowPartialPayments"
-                    name="allowPartialPayments"
-                    checked={settings.allowPartialPayments}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="allowPartialPayments"
-                    className="ml-2 block text-sm text-gray-700"
-                  >
-                    Allow partial payments
+                    Enable Digital Wallets
                   </label>
                 </div>
               </div>
             )}
 
-            {/* Inventory Settings */}
+            {/* === Inventory Tab === */}
             {activeTab === "inventory" && (
               <div className="grid grid-cols-1 gap-6">
                 <div className="flex items-center">
@@ -474,16 +431,16 @@ const Settings = () => {
                     name="lowStockAlert"
                     checked={settings.lowStockAlert}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                   />
                   <label
                     htmlFor="lowStockAlert"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 text-sm text-gray-700"
                   >
                     Enable low stock alerts
                   </label>
                 </div>
-                
+
                 {settings.lowStockAlert && (
                   <div>
                     <label className="block text-md font-medium text-black mb-2">
@@ -494,15 +451,11 @@ const Settings = () => {
                       name="lowStockThreshold"
                       value={settings.lowStockThreshold}
                       onChange={handleInputChange}
-                      min="1"
-                      className="w-full p-2 border rounded-md text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2 border rounded-md"
                     />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Receive alerts when stock falls below this quantity
-                    </p>
                   </div>
                 )}
-                
+
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -510,18 +463,15 @@ const Settings = () => {
                     name="allowNegativeInventory"
                     checked={settings.allowNegativeInventory}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-3 w-3 text-blue-600 border-gray-300 rounded"
                   />
                   <label
                     htmlFor="allowNegativeInventory"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 text-sm text-gray-700"
                   >
-                    Allow negative inventory
+                    Allow Negative Inventory
                   </label>
                 </div>
-                <p className="text-sm text-gray-500">
-                  When enabled, sales can be made even when items are out of stock
-                </p>
               </div>
             )}
 
@@ -529,7 +479,7 @@ const Settings = () => {
             <div className="mt-8 flex justify-end">
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
               >
                 Save Settings
               </button>

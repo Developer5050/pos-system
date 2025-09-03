@@ -160,7 +160,7 @@ model Settings {
 
   // Inventory
   lowStockAlert        Boolean  @default(true)
-  lowStockThreshold    Int      @default(10)
+  lowStockThreshold    Int      @default(5)
   allowNegativeInventory Boolean @default(false)
 
   createdAt            DateTime @default(now())

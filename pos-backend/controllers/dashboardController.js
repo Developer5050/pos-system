@@ -120,4 +120,26 @@ const chartStats = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch stats" });
   }
 };
-module.exports = { getDashboardStats, chartStats };
+
+const lowStockThreshold = async (req, res) => {
+  try {
+    const settings = await prisma.settings.findFirst();
+
+    const threshold = settings?.lowStockThreshold || 10;
+
+    const products = await prisma.product.findMany({
+      where: { stock: { lt: threshold } },
+      select: { id: true, title: true, stock: true },
+    });
+
+    res.status(200).json({
+      threshold,
+      products,
+    });
+  } catch (error) {
+    console.error("Error fetching low stock products:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = { getDashboardStats, chartStats, lowStockThreshold };

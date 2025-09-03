@@ -26,6 +26,8 @@ const Dashboard = () => {
   const [timeRange, setTimeRange] = useState("daily");
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [lowStock, setLowStock] = useState([]);
+  const [threshold, setThreshold] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [metrics, setMetrics] = useState([
@@ -271,16 +273,35 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch Low Stock Alert
+  useEffect(() => {
+    const fetchLowStock = async () => {
+      try {
+        const res = await fetch(
+          "http://localhost:5000/api/dashboard/low-stock"
+        );
+        if (!res.ok) throw new Error("Failed to fetch low stock");
+        const data = await res.json();
+        setLowStock(data.products);
+        setThreshold(data.threshold);
+      } catch (err) {
+        console.error("Error fetching low stock:", err);
+      }
+    };
+
+    fetchLowStock();
+  }, []);
+
   // Low Stock Items
-  const lowStockItems = [
-    { name: "Coffee Beans", stock: 8 },
-    { name: "Paper Cups", stock: 12 },
-    { name: "Chocolate Syrup", stock: 5 },
-    { name: "Napkins", stock: 15 },
-    { name: "Straws", stock: 10 },
-    { name: "Milk", stock: 7 },
-    { name: "Sugar Packets", stock: 20 },
-  ];
+  // const lowStockItems = [
+  //   { name: "Coffee Beans", stock: 8 },
+  //   { name: "Paper Cups", stock: 12 },
+  //   { name: "Chocolate Syrup", stock: 5 },
+  //   { name: "Napkins", stock: 15 },
+  //   { name: "Straws", stock: 10 },
+  //   { name: "Milk", stock: 7 },
+  //   { name: "Sugar Packets", stock: 20 },
+  // ];
 
   // Chart Config
   const chartOptions = {
@@ -386,9 +407,11 @@ const Dashboard = () => {
               />
               <i className="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
             </div>
-            <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold cursor-pointer"
-              onClick={() => navigate("/cashier")}>
-               C
+            <div
+              className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold cursor-pointer"
+              onClick={() => navigate("/cashier")}
+            >
+              C
             </div>
           </div>
         </header>
@@ -535,36 +558,24 @@ const Dashboard = () => {
 
           {/* Low Stock Alert */}
           <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">
-              Low Stock Alert
+            <h2 className="text-lg font-bold text-gray-800 mb-4 mt-1">
+              Low Stock Items (Below {threshold})
             </h2>
-
-            <div className="w-full border border-gray-200 rounded-lg overflow-hidden">
-              <div className="grid grid-cols-2 bg-gray-100 text-gray-700 font-semibold text-sm">
-                <div className="px-4 py-2">Product</div>
-                <div className="px-4 py-2 text-right">Stock</div>
-              </div>
-
-              {lowStockItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-2 items-center border-t border-gray-200 text-sm"
-                >
-                  <div className="px-4 py-2 text-gray-800 font-medium">
-                    {item.name}
-                  </div>
-                  <div className="px-4 py-2 text-right">
-                    <span className="bg-red-100 text-red-600 font-bold px-2 py-1.5 rounded-full text-md">
-                      {item.stock} left
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
+            {lowStock.length === 0 ? (
+              <p className="text-gray-500">All stocks are healthy 🎉</p>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {lowStock.map((item) => (
+                  <li key={item.id} className="flex justify-between py-2">
+                    <span>{item.title}</span>
+                    <span className="text-red-500 font-bold">{item.stock}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <button
               onClick={() => navigate("/products")}
-              className="w-52 mt-6 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-md font-medium"
+              className="mt-6 w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-md font-medium"
             >
               Manage Inventory
             </button>

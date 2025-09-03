@@ -125,9 +125,21 @@ const Cashier = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // Add to order
+  // Add to order with stock validation
   const addToOrder = (product) => {
+    // Check if product is out of stock
+    if (product.stock <= 0) {
+      toast.error(`${product.title} is out of stock!`);
+      return;
+    }
+
+    // Check if adding more than available stock
     const existing = orderItems.find((item) => item.id === product.id);
+    if (existing && existing.quantity >= product.stock) {
+      toast.error(`Only ${product.stock} items available in stock!`);
+      return;
+    }
+
     if (existing) {
       setOrderItems(
         orderItems.map((item) =>
@@ -145,6 +157,7 @@ const Cashier = () => {
           price: product.sellingPrice,
           quantity: 1,
           image: product.image,
+          stock: product.stock, // Keep track of stock
         },
       ]);
     }
@@ -158,33 +171,47 @@ const Cashier = () => {
     toast.info(`${removedItem.name} removed from order`);
   };
 
-  // Adjust quantity
-  const adjustQuantity = (id, adjustment) =>
+  // Adjust quantity with stock validation
+  const adjustQuantity = (id, adjustment) => {
     setOrderItems(
       orderItems.map((item) => {
         if (item.id === id) {
-          const qty = item.quantity + adjustment;
-          return qty > 0 ? { ...item, quantity: qty } : item;
+          const newQuantity = item.quantity + adjustment;
+
+          // Check if trying to add more than available stock
+          if (adjustment > 0 && newQuantity > item.stock) {
+            toast.error(`Only ${item.stock} items available in stock!`);
+            return item;
+          }
+
+          // Check if quantity is valid
+          if (newQuantity > 0) {
+            return { ...item, quantity: newQuantity };
+          }
         }
         return item;
       })
     );
+  };
 
   const subtotal = orderItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  const discount = settings.discount || 0;
+  const discountAmount = subtotal * (settings.discount / 100) || 0;
+  const discountedSubtotal = subtotal - discountAmount;
 
   // Correct tax calculation
   const tax = settings.taxEnabled
     ? settings.taxInclusive
-      ? subtotal - subtotal / (1 + settings.taxRate / 100)
-      : subtotal * (settings.taxRate / 100)
+      ? discountedSubtotal - discountedSubtotal / (1 + settings.taxRate / 100)
+      : discountedSubtotal * (settings.taxRate / 100)
     : 0;
 
-  const total = subtotal - discount + tax;
+  const total = settings.taxInclusive
+    ? discountedSubtotal
+    : discountedSubtotal + tax;
 
   // Place order
   const handlePlaceOrder = async () => {
@@ -213,7 +240,8 @@ const Cashier = () => {
         price: item.price,
       })),
       subtotal,
-      discount,
+      discount: settings.discount,
+      discountAmount,
       tax,
       totalAmount: total,
       paymentMethod: userDetails.paymentMethod || "COD",
@@ -235,7 +263,7 @@ const Cashier = () => {
         address: "",
         paymentMethod: "COD",
       });
-      navigate("/");
+      navigate("/cashier");
       console.log("Order response:", res.data);
     } catch (error) {
       console.error("Order error:", error);
@@ -260,10 +288,6 @@ const Cashier = () => {
         <div className="text-xl text-red-500">Error: {error}</div>
       </div>
     );
-
-  if (isLoading || !settings.taxEnabled) {
-    return <div>Loading settings...</div>;
-  }
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gray-50 font-ubuntu">
@@ -327,9 +351,23 @@ const Cashier = () => {
             filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-shadow border border-blue-100"
-                onClick={() => addToOrder(product)}
+                className={`bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-md transition-border relative ${
+                  product.stock <= 0 ? "opacity-70" : "border border-blue-100"
+                }`}
+                onClick={() => product.stock > 0 && addToOrder(product)}
               >
+                {/* Stock Alert Badge */}
+                {product.stock <= 0 && (
+                  <div className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                    Out of Stock
+                  </div>
+                )}
+                {product.stock > 0 && product.stock <= 5 && (
+                  <div className="absolute top-2 right-2 bg-yellow-600 text-white text-xs px-2 py-1 rounded">
+                    Low Stock : {product.stock}
+                  </div>
+                )}
+
                 <div className="h-32 rounded flex items-center justify-center mb-3">
                   <img
                     src={`http://localhost:5000/${product.image.replace(
@@ -346,23 +384,48 @@ const Cashier = () => {
                 <p className="text-[11px] text-gray-700 mb-3">
                   {product.description}
                 </p>
-                <div>
-                  <span className="text-black font-medium text-md">
-                    ${Number(product.sellingPrice || 0).toFixed(2)}
-                  </span>
-                  <span className="ml-2 text-gray-500 text-sm">/</span>
-                  <span className="text-gray-600 text-sm">
-                    {product.unit || "1 pcs"}
-                  </span>
+                <div className="flex justify-between items-center mt-2">
+                  {/* Price & Unit */}
+                  <div>
+                    <span className="text-black font-medium text-md">
+                      ${Number(product.sellingPrice || 0).toFixed(2)}
+                    </span>
+                    <span className="ml-2 text-gray-500 text-sm">/</span>
+                    <span className="text-gray-600 text-sm">
+                      {product.unit || "1 pcs"}
+                    </span>
+                  </div>
+
+                  {/* Stock Right Side */}
+                  <div className="text-sm text-green-600">
+                    Stock :{" "}
+                    <span
+                      className={`font-medium ${
+                        product.stock <= 0
+                          ? "text-red-600"
+                          : product.stock <= 5
+                          ? "text-yellow-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {product.stock}
+                    </span>
+                  </div>
                 </div>
+
                 <button
-                  className="w-full py-1.5 mt-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                  className={`w-full py-1.5 mt-2 rounded text-sm transition-colors ${
+                    product.stock <= 0
+                      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
+                  disabled={product.stock <= 0}
                   onClick={(e) => {
                     e.stopPropagation();
                     addToOrder(product);
                   }}
                 >
-                  Add to Order
+                  {product.stock <= 0 ? "Out of Stock" : "Add to Order"}
                 </button>
               </div>
             ))
@@ -402,6 +465,7 @@ const Cashier = () => {
                     <p className="text-gray-600 font-medium text-sm">
                       ${Number(item.price).toFixed(2)}
                     </p>
+                    <p className="text-xs text-gray-500">Stock: {item.stock}</p>
                   </div>
                 </div>
 
@@ -456,41 +520,42 @@ const Cashier = () => {
             </span>
           </div>
 
-          {/* Discount (always 0) */}
-          <div className="flex justify-between items-center">
-            <span className="text-black font-semibold text-[15px]">
-              Discount
-            </span>
-            <span className="text-black font-medium">$0.00</span>
-          </div>
+          {/* Discount */}
+          {settings.discount > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-black font-semibold text-[15px]">
+                Discount ({settings.discount}%)
+              </span>
+              <span className="text-red-500 font-medium">
+                -${discountAmount.toFixed(2)}
+              </span>
+            </div>
+          )}
 
-          {/* Tax (fixed from settings) */}
+          {/* Tax */}
           {settings.taxEnabled && (
             <div className="flex justify-between">
-              <span className="text-black font-semibold text-[15px]">Tax</span>
-              <span className="font-medium text-black">
-                %{Number(settings.taxRate || 0).toFixed(2)}
+              <span className="text-black font-semibold text-[15px]">
+                Tax ({settings.taxRate}%)
+                {settings.taxInclusive ? " (Included)" : ""}
               </span>
+              <span className="font-medium text-black">${tax.toFixed(2)}</span>
             </div>
           )}
 
           {/* Total */}
           <div className="flex justify-between pt-2 border-t border-blue-200 font-bold text-black text-[18px]">
             <span>Total</span>
-            <span>
-              $
-              {subtotal > 0
-                ? (
-                    subtotal +
-                    (settings.taxEnabled ? Number(settings.taxRate || 0) : 0)
-                  ).toFixed(2)
-                : "0.00"}
-            </span>
+            <span>${total.toFixed(2)}</span>
           </div>
         </div>
 
         <button
-          className="mt-4 bg-blue-600 text-white py-1.5 rounded-md font-semibold hover:bg-blue-700 transition-colors text-sm lg:text-base"
+          className={`mt-4 text-white py-1.5 rounded-md font-semibold transition-colors text-sm lg:text-base ${
+            orderItems.length === 0
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          }`}
           disabled={orderItems.length === 0}
           onClick={() => setShowPaymentModal(true)}
         >

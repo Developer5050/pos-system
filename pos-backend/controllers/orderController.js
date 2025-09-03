@@ -5,81 +5,75 @@ const createOrder = async (req, res) => {
   try {
     const { customerName, email, phone, address, items, status } = req.body;
 
-    // ✅ Validation
-    if (
-      !customerName ||
-      !email ||
-      !phone ||
-      !address ||
-      !items ||
-      items.length === 0
-    ) {
+    if (!customerName || !email || !phone || !address || !items || items.length === 0) {
       return res.status(400).json({
         message: "customerName, email, phone, address and items are required",
       });
     }
 
     // ✅ Find or Create Customer
-    let customer = await prisma.customer.findUnique({
-      where: { email },
-    });
-
+    let customer = await prisma.customer.findUnique({ where: { email } });
     if (!customer) {
       customer = await prisma.customer.create({
-        data: {
-          name: customerName,
-          email,
-          phone,
-          address,
-        },
+        data: { name: customerName, email, phone, address },
       });
     }
 
-    // ✅ Calculate total amount & prepare order items
-    let totalAmount = 0;
+    let subtotal = 0;
     const orderItemsData = [];
 
-    for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-      });
+    // ✅ Run transaction for stock check + reduce
+    await prisma.$transaction(async (tx) => {
+      for (const item of items) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
 
-      if (!product) {
-        return res
-          .status(404)
-          .json({ message: `Product with ID ${item.productId} not found` });
+        if (!product) {
+          throw new Error(`Product with ID ${item.productId} not found`);
+        }
+
+        if (!product.sellingPrice) {
+          throw new Error(`Product ${product.id} has no price set`);
+        }
+
+        if (product.stock < item.quantity) {
+          throw new Error(`${product.name} is out of stock`);
+        }
+
+        // ✅ Reduce stock safely
+        await tx.product.update({
+          where: { id: product.id },
+          data: {
+            stock: { decrement: item.quantity }, // 👈 recommended way
+          },
+        });
+
+        subtotal += product.sellingPrice * item.quantity;
+
+        orderItemsData.push({
+          quantity: item.quantity,
+          price: product.sellingPrice,
+          productId: item.productId,
+        });
       }
+    });
 
-      if (!product.sellingPrice) {
-        return res
-          .status(400)
-          .json({ message: `Product ${product.id} has no price set` });
-      }
+    // ✅ Get Tax Settings
+    const settings = await prisma.settings.findFirst();
+    const tax = settings?.taxEnabled ? Number(settings.taxRate || 0) : 0;
 
-      totalAmount += product.sellingPrice * item.quantity;
-
-      orderItemsData.push({
-        quantity: item.quantity,
-        price: product.sellingPrice, // ✅ always safe
-        productId: item.productId,
-      });
-    }
-
-    // ✅ Generate unique order number
+    const totalAmount = subtotal + tax;
     const orderNumber = `ORD-${Date.now()}`;
 
-    // ✅ Create Order
+    // ✅ Create order
     const order = await prisma.order.create({
       data: {
         orderNumber,
         amount: totalAmount,
-        status: status || "PENDING",
-        customer: {
-          connect: { id: customer.id },
-        },
-        orderItems: {
-          create: orderItemsData,
-        },
+        status: status || "PAID",
+        customer: { connect: { id: customer.id } },
+        orderItems: { create: orderItemsData },
       },
       include: {
         customer: true,
@@ -90,7 +84,7 @@ const createOrder = async (req, res) => {
     res.status(201).json(order);
   } catch (error) {
     console.error("❌ Error creating order:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(400).json({ error: error.message || "Internal Server Error" });
   }
 };
 

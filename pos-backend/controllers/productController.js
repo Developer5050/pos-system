@@ -7,19 +7,6 @@ const generateSKU = async () => {
   return `SKU-${String(count + 1).padStart(3, "0")}`;
 };
 
-// Generate Barcode
-// const generateBarcode = async () => {
-//   const count = await prisma.product.count();
-//   return `BAR-${String(count + 1).padStart(5, "0")}`;
-// };
-
-// Calculate Discount
-// const calculateDiscount = (costPrice, sellingPrice) => {
-//   if (!costPrice || !sellingPrice) return 0;
-//   if (sellingPrice >= costPrice) return 0;
-//   return ((costPrice - sellingPrice) / costPrice) * 100;
-// };
-
 const addProduct = async (req, res) => {
   try {
     // Trim all string values
@@ -34,7 +21,7 @@ const addProduct = async (req, res) => {
       title,
       description,
       stock,
-      status = "ACTIVE",
+      status = "Active",
       unit = "PIECE",
       brand,
       costPrice,
@@ -166,7 +153,7 @@ const getAllProducts = async (req, res) => {
   try {
     const products = await prisma.product.findMany({
       include: { createdBy: true },
-      orderBy: { updatedAt: "asc" },
+      orderBy: { updatedAt: "desc" },
     });
 
     res.status(200).json(products);

@@ -422,7 +422,7 @@ const Dashboard = () => {
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+                    className={`px-4 py-1.5 text-sm rounded-md font-medium transition-colors ${
                       timeRange === range
                         ? "bg-blue-600 text-white"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"

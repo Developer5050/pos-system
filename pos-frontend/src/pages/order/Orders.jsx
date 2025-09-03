@@ -14,11 +14,6 @@ const Orders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Tax settings
-  const [settings, setSettings] = useState({
-    taxEnabled: true, // enable tax
-    taxRate: 2,       // fixed tax amount
-  });
 
   // Fetch orders
   const fetchOrders = async () => {
@@ -143,12 +138,7 @@ const Orders = () => {
                           )
                           .join(", ")}
                       </td>
-                      <td className="py-4 px-4">
-                        ${(
-                          order.amount +
-                          (settings.taxEnabled ? Number(settings.taxRate || 0) : 0)
-                        ).toFixed(2)}
-                      </td>
+                      <td className="py-4 px-4">${order.amount.toFixed(2)}</td>
                       <td className="py-4 px-4">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -352,27 +342,20 @@ const Orders = () => {
               <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                 <p className="text-gray-800">
                   <span className="font-medium">Amount:</span> $
-                  {(
-                    orderToView.amount +
-                    (settings.taxEnabled
-                      ? Number(settings.taxRate || 0)
-                      : 0)
-                  ).toFixed(2)}
+                  {orderToView.amount?.toFixed(2)}
                 </p>
 
                 <div className="text-gray-800">
                   <span className="font-medium">Status:</span>
                   <select
                     className="ml-3 border border-gray-300 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={orderToView.status || ""}
+                    value={orderToView.status || "PAID"} // default PAID
                     onChange={(e) =>
                       updateOrderStatus(orderToView.id, e.target.value)
                     }
                   >
                     <option value="PAID">PAID</option>
-                    <option value="UNPAID">UNPAID</option>
-                    <option value="PENDING">PENDING</option>
-                    <option value="CONFIRMED">CONFIRMED</option>
+                    <option value="REVERSED">REVERSED</option>
                     <option value="CANCELLED">CANCELLED</option>
                   </select>
                 </div>

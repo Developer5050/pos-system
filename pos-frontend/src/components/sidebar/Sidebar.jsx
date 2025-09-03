@@ -148,6 +148,20 @@ const Sidebar = ({ onLogout }) => {
           </li>
           <li className="mb-2">
             <NavLink
+              to="/suppliers"
+              className={({ isActive }) =>
+                `flex items-center p-2 rounded-lg ${
+                  isActive
+                    ? "bg-blue-700 text-white"
+                    : "hover:bg-blue-700 hover:text-white"
+                }`
+              }
+            >
+              <i className="fa-solid fa-truck mr-2"></i> Suppliers
+            </NavLink>
+          </li>
+          <li className="mb-2">
+            <NavLink
               to="/settings"
               className={({ isActive }) =>
                 `flex items-center p-2 rounded-lg ${

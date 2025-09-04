@@ -9,66 +9,18 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+// Accept only jpeg, jpg, png
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [".jpeg", ".jpg", ".png"];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowedTypes.includes(ext)) {
+    cb(null, true); // accept file
+  } else {
+    cb(new Error("Only JPEG, JPG, and PNG files are allowed"), false); // reject file
+  }
+};
+
+const upload = multer({ storage, fileFilter });
 
 module.exports = upload;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const multer = require("multer");
-
-
-// // Storage config (you can customize this)
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, "uploads/");
-//   },
-//   filename: function (req, file, cb) {
-//     cb(null, Date.now() + "-" + file.originalname);
-//   },
-// });
-
-// const upload = multer({ storage });
-
-// module.exports = upload;

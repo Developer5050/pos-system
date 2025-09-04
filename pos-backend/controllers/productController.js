@@ -9,7 +9,6 @@ const generateSKU = async () => {
 
 const addProduct = async (req, res) => {
   try {
-    // Trim all string values
     const body = Object.fromEntries(
       Object.entries(req.body).map(([k, v]) => [
         k.trim(),
@@ -30,24 +29,21 @@ const addProduct = async (req, res) => {
       category,
       barcode,
       discount,
+      batchNumber,
+      type,
+      supplierId,
     } = body;
 
-    // Required fields validation
     if (!title) return res.status(400).json({ error: "Title is required" });
     if (!brand) return res.status(400).json({ error: "Brand is required" });
     if (!barcode) return res.status(400).json({ error: "Barcode is required" });
-    if (!createdById)
-      return res.status(400).json({ error: "createdById is required" });
-    if (discount === undefined || discount === null)
-      return res.status(400).json({ error: "Discount is required" });
 
-    // Validate discount is a number
     const discountValue = parseFloat(discount);
     if (isNaN(discountValue)) {
       return res.status(400).json({ error: "Discount must be a valid number" });
     }
 
-    // Lookup category by name
+    // ✅ Category find
     let categoryId = null;
     if (category) {
       const categoryRecord = await prisma.category.findUnique({
@@ -72,15 +68,18 @@ const addProduct = async (req, res) => {
         stock: parseInt(stock) || 0,
         status: statusNormalized,
         unit: unitNormalized,
-        brand: brand.trim(),
+        brand,
         costPrice: parseFloat(costPrice),
         sellingPrice: parseFloat(sellingPrice),
         discount: discountValue,
         image: req.file?.path || null,
         sku: await generateSKU(),
-        barcode: barcode.trim(),
+        barcode,
         createdById: parseInt(createdById),
         categoryId,
+        batchNumber,
+        type,
+        supplierId: supplierId ? parseInt(supplierId) : null,
       },
     });
 
@@ -94,7 +93,6 @@ const addProduct = async (req, res) => {
 const editProduct = async (req, res) => {
   try {
     const { id } = req.params;
-
     const {
       title,
       description,
@@ -104,27 +102,28 @@ const editProduct = async (req, res) => {
       brand,
       costPrice,
       sellingPrice,
-      category, // <-- frontend se category name ayegi
+      category,
       discount,
+      batchNumber,
+      type,
     } = req.body;
 
     const image = req.file?.path;
 
-    // 🔹 Category name se ID find karo
     let categoryId;
     if (category) {
       const categoryRecord = await prisma.category.findUnique({
         where: { name: category.trim() },
       });
-
       if (!categoryRecord) {
         return res.status(400).json({ error: "Category not found" });
       }
-
       categoryId = categoryRecord.id;
     }
 
-    // 🔹 Product update
+    // ✅ supplierId backend se detect
+    const supplierId = req.user?.supplierId;
+
     const product = await prisma.product.update({
       where: { id: parseInt(id) },
       data: {
@@ -136,9 +135,12 @@ const editProduct = async (req, res) => {
         brand,
         costPrice: costPrice ? parseFloat(costPrice) : undefined,
         sellingPrice: sellingPrice ? parseFloat(sellingPrice) : undefined,
-        discount: discount ? parseFloat(discount) : undefined, // 👈 sirf save karo
+        discount: discount ? parseFloat(discount) : undefined,
         ...(image && { image }),
         ...(categoryId && { categoryId }),
+        batchNumber,
+        type,
+        supplierId, // 👈 yahan bhi auto update
       },
     });
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { MdLogout } from "react-icons/md";
 import { FaShoppingCart, FaBox, FaUsers, FaCog } from "react-icons/fa";
@@ -10,6 +10,11 @@ import "react-toastify/dist/ReactToastify.css";
 
 const Sidebar = ({ onLogout }) => {
   const navigate = useNavigate();
+  const [isSuppliersOpen, setIsSuppliersOpen] = useState(false);
+
+  const toggleSuppliers = () => {
+    setIsSuppliersOpen(!isSuppliersOpen);
+  };
 
   const handleLogout = async () => {
     try {
@@ -74,13 +79,13 @@ const Sidebar = ({ onLogout }) => {
       <div className="p-4 text-2xl font-bold border-b border-blue-700">
         <i className="fas fa-cash-register mr-2"></i> POS System
       </div>
-      <nav className="p-3 ">
+      <nav className="p-2">
         <ul>
-          <li className="mb-2">
+          <li className="mb-3">
             <NavLink
               to="/"
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg ${
+                `flex items-center p-1.5 rounded-lg ${
                   isActive
                     ? "bg-blue-700 text-white"
                     : "hover:bg-blue-700 hover:text-white"
@@ -90,11 +95,12 @@ const Sidebar = ({ onLogout }) => {
               <AiFillDashboard className="mr-3 text-xl" /> Dashboard
             </NavLink>
           </li>
-          <li className="mb-2">
+
+          <li className="mb-3">
             <NavLink
               to="/category"
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg ${
+                `flex items-center p-1.5 rounded-lg ${
                   isActive
                     ? "bg-blue-700 text-white"
                     : "hover:bg-blue-700 hover:text-white"
@@ -104,11 +110,12 @@ const Sidebar = ({ onLogout }) => {
               <BiSolidCategory className="mr-3 text-xl" /> Category
             </NavLink>
           </li>
-          <li className="mb-2">
+
+          <li className="mb-3">
             <NavLink
               to="/products"
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg ${
+                `flex items-center p-1.5 rounded-lg ${
                   isActive
                     ? "bg-blue-700 text-white"
                     : "hover:bg-blue-700 hover:text-white"
@@ -118,11 +125,12 @@ const Sidebar = ({ onLogout }) => {
               <FaShoppingCart className="mr-3 text-xl" /> Products
             </NavLink>
           </li>
-          <li className="mb-2">
+
+          <li className="mb-3">
             <NavLink
               to="/orders"
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg ${
+                `flex items-center p-1.5 rounded-lg ${
                   isActive
                     ? "bg-blue-700 text-white"
                     : "hover:bg-blue-700 hover:text-white"
@@ -132,11 +140,12 @@ const Sidebar = ({ onLogout }) => {
               <FaBox className="mr-3 text-xl" /> Orders
             </NavLink>
           </li>
-          <li className="mb-2">
+
+          <li className="mb-3">
             <NavLink
               to="/customers"
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg ${
+                `flex items-center p-1.5 rounded-lg ${
                   isActive
                     ? "bg-blue-700 text-white"
                     : "hover:bg-blue-700 hover:text-white"
@@ -146,25 +155,63 @@ const Sidebar = ({ onLogout }) => {
               <FaUsers className="mr-3 text-xl" /> Customers
             </NavLink>
           </li>
-          <li className="mb-2">
-            <NavLink
-              to="/suppliers"
-              className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg ${
-                  isActive
-                    ? "bg-blue-700 text-white"
-                    : "hover:bg-blue-700 hover:text-white"
-                }`
-              }
-            >
-              <i className="fa-solid fa-truck mr-2"></i> Suppliers
-            </NavLink>
+
+          <li className="mb-3">
+            <div className="flex flex-col">
+              <div
+                onClick={toggleSuppliers}
+                className="flex items-center p-1.5 rounded-lg cursor-pointer hover:bg-blue-700 hover:text-white"
+              >
+                <i className="fa-solid fa-truck mr-2"></i> Suppliers
+                <i
+                  className={`ml-auto transition-transform ${
+                    isSuppliersOpen ? "rotate-90" : ""
+                  } fa-solid fa-chevron-right`}
+                ></i>
+              </div>
+
+              {/* Nested Links */}
+              {isSuppliersOpen && (
+                <ul className="ml-6 mt-1">
+                  <li className="mb-1">
+                    <NavLink
+                      to="/suppliers"
+                      end
+                      className={({ isActive }) =>
+                        `flex items-center p-1.5 rounded-lg ${
+                          isActive
+                            ? "bg-blue-700 text-white"
+                            : "hover:bg-blue-700 hover:text-white"
+                        }`
+                      }
+                    >
+                      Suppliers Data
+                    </NavLink>
+                  </li>
+                  <li className="mb-1">
+                    <NavLink
+                      to="/suppliers/transaction"
+                      className={({ isActive }) =>
+                        `flex items-center p-1.5 rounded-lg ${
+                          isActive
+                            ? "bg-blue-700 text-white"
+                            : "hover:bg-blue-700 hover:text-white"
+                        }`
+                      }
+                    >
+                      Transaction
+                    </NavLink>
+                  </li>
+                </ul>
+              )}
+            </div>
           </li>
-          <li className="mb-2">
+
+          <li className="mb-3">
             <NavLink
               to="/settings"
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg ${
+                `flex items-center p-1.5 rounded-lg ${
                   isActive
                     ? "bg-blue-700 text-white"
                     : "hover:bg-blue-700 hover:text-white"
@@ -178,7 +225,7 @@ const Sidebar = ({ onLogout }) => {
       </nav>
 
       {/* Logout Section at Bottom */}
-      <div className="absolute bottom-0 w-full p-4 border-t border-blue-700">
+      <div className="absolute bottom-0 w-full p-2 border-t border-blue-700">
         <button
           onClick={handleLogout}
           className="flex items-center p-2 w-full text-left rounded-lg hover:bg-blue-700 hover:text-white transition-colors duration-200"

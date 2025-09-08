@@ -9,7 +9,6 @@ const generateSKU = async () => {
 
 const addProduct = async (req, res) => {
   try {
-    // Trim all string values
     const body = Object.fromEntries(
       Object.entries(req.body).map(([k, v]) => [
         k.trim(),
@@ -30,24 +29,32 @@ const addProduct = async (req, res) => {
       category,
       barcode,
       discount,
+      supplierId,
     } = body;
 
-    // Required fields validation
     if (!title) return res.status(400).json({ error: "Title is required" });
     if (!brand) return res.status(400).json({ error: "Brand is required" });
     if (!barcode) return res.status(400).json({ error: "Barcode is required" });
     if (!createdById)
       return res.status(400).json({ error: "createdById is required" });
-    if (discount === undefined || discount === null)
-      return res.status(400).json({ error: "Discount is required" });
+    if (!supplierId)
+      return res.status(400).json({ error: "SupplierId is required" });
 
-    // Validate discount is a number
+    // validate supplier exists
+    const supplier = await prisma.supplier.findUnique({
+      where: { id: parseInt(supplierId) },
+    });
+    if (!supplier) {
+      return res.status(400).json({ error: "Supplier not found" });
+    }
+
+    // discount
     const discountValue = parseFloat(discount);
     if (isNaN(discountValue)) {
       return res.status(400).json({ error: "Discount must be a valid number" });
     }
 
-    // Lookup category by name
+    // category lookup
     let categoryId = null;
     if (category) {
       const categoryRecord = await prisma.category.findUnique({
@@ -81,6 +88,7 @@ const addProduct = async (req, res) => {
         barcode: barcode.trim(),
         createdById: parseInt(createdById),
         categoryId,
+        supplierId: parseInt(supplierId), // 👈 supplierId set here
       },
     });
 

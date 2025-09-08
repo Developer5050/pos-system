@@ -17,7 +17,7 @@ const deleteCustomer = async (req, res) => {
     const { id } = req.params;
 
     await prisma.customer.delete({
-      where: { id: Number(id) },
+      where: { id: parseInt(id) },
     });
 
     res.json({ message: "Customer deleted successfully" });

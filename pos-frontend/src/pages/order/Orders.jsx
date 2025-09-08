@@ -14,7 +14,6 @@ const Orders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-
   // Fetch orders
   const fetchOrders = async () => {
     try {
@@ -96,41 +95,47 @@ const Orders = () => {
           <p className="text-center p-4">Loading orders...</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-black">
+            <table className="min-w-full border border-gray-300 rounded-lg overflow-hidden">
+              <thead className="bg-black border-b border-gray-300">
                 <tr>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
-                    Order ID
+                  <th className="py-3 px-4 text-left text-sm font-semibold text-white border-r border-gray-300">
+                    Order
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                  <th className="py-3 px-4 text-left text-sm font-semibold text-white border-r border-gray-300">
                     Customer
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
-                    Products
+                  <th className="py-3 px-4 text-left text-sm font-semibold text-white border-r border-gray-300">
+                    Items
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                  <th className="py-3 px-4 text-left text-sm font-semibold text-white border-r border-gray-300">
                     Amount
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                  <th className="py-3 px-4 text-left text-sm font-semibold text-white border-r border-gray-300">
                     Status
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
-                    Order Date
+                  <th className="py-3 px-4 text-left text-sm font-semibold text-white border-r border-gray-300">
+                    Date
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase">
+                  <th className="py-3 px-4 text-left text-sm font-semibold text-white">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+
+              <tbody className="bg-white">
                 {currentOrders.length > 0 ? (
                   currentOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="py-4 px-4 text-sm">{order.orderNumber}</td>
-                      <td className="py-4 px-4 font-medium text-[14px]">
+                    <tr
+                      key={order.id}
+                      className="hover:bg-gray-50 border-b border-gray-200"
+                    >
+                      <td className="py-4 px-4 text-sm border-r border-gray-200">
+                        {order.orderNumber}
+                      </td>
+                      <td className="py-4 px-4 font-medium text-[14px] border-r border-gray-200">
                         {order.customer?.name}
                       </td>
-                      <td className="py-4 px-4 text-sm">
+                      <td className="py-4 px-4 text-sm border-r border-gray-200">
                         {order.orderItems
                           ?.map(
                             (item) =>
@@ -138,8 +143,10 @@ const Orders = () => {
                           )
                           .join(", ")}
                       </td>
-                      <td className="py-4 px-4">${order.amount.toFixed(2)}</td>
-                      <td className="py-4 px-4">
+                      <td className="py-4 px-4 border-r border-gray-200">
+                        ${order.amount.toFixed(2)}
+                      </td>
+                      <td className="py-4 px-4 border-r border-gray-200">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
                             order.status === "PAID"
@@ -152,10 +159,10 @@ const Orders = () => {
                           {order.status}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="py-4 px-4 border-r border-gray-200">
                         {new Date(order.createdAt).toISOString().split("T")[0]}
                       </td>
-                      <td className="py-4 px-4 flex space-x-2 mt-3">
+                      <td className="py-4 px-4 flex space-x-2">
                         <button
                           className="flex items-center text-blue-500 hover:text-blue-700"
                           onClick={() => openViewModal(order)}

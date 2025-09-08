@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { FiEdit, FiTrash2 } from "react-icons/fi";
 
 const Category = () => {
   const [categories, setCategories] = useState([]);
@@ -11,7 +12,7 @@ const Category = () => {
   const [error, setError] = useState("");
   const [fetchLoading, setFetchLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
@@ -61,7 +62,10 @@ const Category = () => {
   // Get current categories for pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentCategories = filteredCategories.slice(indexOfFirstItem, indexOfLastItem);
+  const currentCategories = filteredCategories.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
   const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
 
   // Change page
@@ -168,7 +172,7 @@ const Category = () => {
         // Refresh categories after successful deletion
         await fetchCategories();
         closeDeleteModal();
-        
+
         // Adjust current page if needed after deletion
         if (currentCategories.length === 1 && currentPage > 1) {
           setCurrentPage(currentPage - 1);
@@ -214,14 +218,14 @@ const Category = () => {
             <input
               type="text"
               placeholder="Search categories..."
-              className="pl-10 pr-4 py-1.5 text-[15px] border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+              className="pl-10 pr-4 py-2 text-[15px] border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1); // Reset to first page when searching
               }}
             />
-            <i className="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+            <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
           </div>
         </div>
       </div>
@@ -247,7 +251,7 @@ const Category = () => {
               id="categoryName"
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
-              className="w-full p-1.5 text-[14px] border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 text-[14px] border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter category name"
               required
               disabled={loading}
@@ -256,7 +260,7 @@ const Category = () => {
           <div className="flex items-end space-x-2">
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-600 text-white py-1.5 px-6 rounded-lg font-medium disabled:bg-blue-300"
+              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-6 rounded-lg font-medium"
               disabled={loading || !categoryName.trim()}
             >
               {loading
@@ -291,61 +295,66 @@ const Category = () => {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-black">
+              <table className="min-w-full border border-gray-300 rounded-lg shadow-md overflow-hidden">
+                <thead className="bg-gray-900">
                   <tr>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">
-                      Category Name
-                    </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">
-                      Products
-                    </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">
-                      Created At
-                    </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider">
-                      Actions
-                    </th>
+                    {[
+                      "ID",
+                      "Category Name",
+                      "Products",
+                      "Created At",
+                      "Actions",
+                    ].map((header, idx) => (
+                      <th
+                        key={idx}
+                        className={`py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider ${
+                          idx !== 4 ? "border-r border-white" : ""
+                        }`}
+                      >
+                        {header}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+
+                <tbody className="bg-white">
                   {currentCategories.length > 0 ? (
                     currentCategories.map((category) => (
-                      <tr key={category.id} className="hover:bg-gray-50">
-                        <td className="py-4 px-4 font-medium text-gray-900">
+                      <tr
+                        key={category.id}
+                        className="hover:bg-gray-50 border-b border-gray-200"
+                      >
+                        <td className="py-4 px-4 font-medium text-gray-900 border-r border-gray-200">
                           {category.id}
                         </td>
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-4 border-r border-gray-200">
                           <span className="font-bold text-sm">
                             {category.name}
                           </span>
                         </td>
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-4 border-r border-gray-200">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                             {category.products} products
                           </span>
                         </td>
-                        <td className="py-4 px-4 text-sm text-gray-500">
+                        <td className="py-4 px-4 text-sm text-gray-500 border-r border-gray-200">
                           {category.createdAt}
                         </td>
-                        <td className="py-4 px-4">
-                          <div className="flex space-x-2">
+                        <td className="py-4 px-4 border-r border-gray-200 text-center">
+                          <div className="flex justify-center space-x-3">
                             <button
-                              className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-100"
+                              className="text-green-500 hover:text-green-700"
                               onClick={() => handleEdit(category)}
                               disabled={loading}
                             >
-                              <i className="fas fa-edit"></i>
+                              <FiEdit />
                             </button>
                             <button
-                              className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100"
+                              className="text-red-500 hover:text-red-700"
                               onClick={() => openDeleteModal(category)}
                               disabled={loading}
                             >
-                              <i className="fas fa-trash"></i>
+                              <FiTrash2 />
                             </button>
                           </div>
                         </td>
@@ -371,12 +380,15 @@ const Category = () => {
             {filteredCategories.length > 0 && (
               <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
                 <div className="text-sm text-gray-700 mb-4 sm:mb-0">
-                  Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
+                  Showing{" "}
+                  <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
                   <span className="font-medium">
                     {Math.min(indexOfLastItem, filteredCategories.length)}
                   </span>{" "}
                   of{" "}
-                  <span className="font-medium">{filteredCategories.length}</span>{" "}
+                  <span className="font-medium">
+                    {filteredCategories.length}
+                  </span>{" "}
                   results
                 </div>
                 <div className="flex space-x-1">
@@ -387,21 +399,21 @@ const Category = () => {
                   >
                     Previous
                   </button>
-                  
-                  {pageNumbers.map(number => (
+
+                  {pageNumbers.map((number) => (
                     <button
                       key={number}
                       onClick={() => paginate(number)}
                       className={`px-3 py-1 border rounded-md text-sm font-medium ${
-                        currentPage === number 
-                          ? 'text-white bg-blue-600' 
-                          : 'text-gray-700 bg-white hover:bg-gray-50'
+                        currentPage === number
+                          ? "text-white bg-blue-600"
+                          : "text-gray-700 bg-white hover:bg-gray-50"
                       }`}
                     >
                       {number}
                     </button>
                   ))}
-                  
+
                   <button
                     onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages}

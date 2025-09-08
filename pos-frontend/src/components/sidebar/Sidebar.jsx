@@ -77,9 +77,9 @@ const Sidebar = ({ onLogout }) => {
   return (
     <div className="w-64 bg-blue-800 text-white h-screen fixed top-0 left-0 font-ubuntu">
       <div className="p-4 text-2xl font-bold border-b border-blue-700">
-        <i className="fas fa-cash-register mr-2"></i> POS System
+        <i className="fas fa-cash-register mr-1"></i> POS System
       </div>
-      <nav className="p-2">
+      <nav className="p-2 mt-2">
         <ul>
           <li className="mb-3">
             <NavLink

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { FiTrash2 } from "react-icons/fi";
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -55,11 +56,12 @@ const Customers = () => {
         await axios.delete(
           `http://localhost:5000/api/customer/delete-customer/${customerToDelete.id}`
         );
+
         // Remove deleted customer from state
         setCustomers(customers.filter((c) => c.id !== customerToDelete.id));
         closeDeleteModal();
 
-        // Adjust pagination
+        // Adjust pagination if needed
         if (currentCustomers.length === 1 && currentPage > 1) {
           setCurrentPage(currentPage - 1);
         }
@@ -90,7 +92,7 @@ const Customers = () => {
           <input
             type="text"
             placeholder="Search customers..."
-            className="pl-3 pr-4 py-1.5 text-[15px] border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+            className="pl-3 pr-4 py-2 text-[15px] border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -103,44 +105,61 @@ const Customers = () => {
       {/* Table */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-black text-white">
+          <table className="min-w-full border border-gray-300 rounded-lg shadow-md overflow-hidden">
+            <thead className="bg-gray-900">
               <tr>
-                <th className="py-3 px-4 text-left text-xs uppercase">ID</th>
-                <th className="py-3 px-4 text-left text-xs uppercase">Name</th>
-                <th className="py-3 px-4 text-left text-xs uppercase">Email</th>
-                <th className="py-3 px-4 text-left text-xs uppercase">Phone</th>
-                <th className="py-3 px-4 text-left text-xs uppercase">
-                  Address
-                </th>
-                <th className="py-3 px-4 text-left text-xs uppercase min-w-[120px]">
-                  Created At
-                </th>
-                <th className="py-3 px-4 text-left text-xs uppercase">
-                  Actions
-                </th>
+                {[
+                  "ID",
+                  "Name",
+                  "Email",
+                  "Phone",
+                  "Address",
+                  "Created At",
+                  "Actions",
+                ].map((header, idx) => (
+                  <th
+                    key={idx}
+                    className={`py-3 px-4 text-left text-xs font-medium text-white uppercase tracking-wider ${
+                      idx !== 6 ? "border-r border-white" : ""
+                    }`}
+                  >
+                    {header}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+
+            <tbody className="bg-white">
               {currentCustomers.length > 0 ? (
                 currentCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="py-4 px-4 text-sm">{customer.id}</td>
-                    <td className="py-4 px-4 text-sm">
+                  <tr
+                    key={customer.id}
+                    className="hover:bg-gray-50 border-b border-gray-200"
+                  >
+                    <td className="py-4 px-4 text-sm border-r border-gray-200">
+                      {customer.id}
+                    </td>
+                    <td className="py-4 px-4 text-sm border-r border-gray-200">
                       {customer.name}
                     </td>
-                    <td className="py-4 px-4 text-sm">{customer.email}</td>
-                    <td className="py-4 px-4 text-sm">{customer.phone}</td>
-                    <td className="py-4 px-4 text-sm max-w-xs truncate">
+                    <td className="py-4 px-4 text-sm border-r border-gray-200">
+                      {customer.email}
+                    </td>
+                    <td className="py-4 px-4 text-sm border-r border-gray-200">
+                      {customer.phone}
+                    </td>
+                    <td className="py-4 px-4 text-sm max-w-xs truncate border-r border-gray-200">
                       {customer.address}
                     </td>
-                    <td className="py-4 px-1 text-sm">{customer.createdAt}</td>
-                    <td className="py-4 px-4 text-sm">
+                    <td className="py-4 px-1 text-sm border-r border-gray-200">
+                      {customer.createdAt}
+                    </td>
+                    <td className="py-4 px-4 text-md border-r border-gray-200 text-center">
                       <button
-                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-100"
+                        className="text-red-500 hover:text-red-700"
                         onClick={() => openDeleteModal(customer)}
                       >
-                        <i className="fas fa-trash"></i>
+                        <FiTrash2 />
                       </button>
                     </td>
                   </tr>
@@ -206,8 +225,7 @@ const Customers = () => {
             <div className="p-6 text-center">
               <h3 className="text-lg font-medium mb-2">Delete Customer</h3>
               <p className="text-sm text-gray-500 mb-6">
-                Are you sure you want to delete "{customerToDelete?.firstName}{" "}
-                {customerToDelete?.lastName}"?
+                Are you sure you want to delete "{customerToDelete?.name}"?
               </p>
               <div className="flex justify-center space-x-3">
                 <button

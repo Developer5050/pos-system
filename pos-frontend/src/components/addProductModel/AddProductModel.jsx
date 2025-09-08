@@ -22,7 +22,7 @@ const AddProductModal = ({
     discount: "0",
     barcode: "",
     category: "",
-    supplierId: "", 
+    supplierId: "",
     image: "",
     status: "Active",
     imageFile: null,
@@ -40,7 +40,9 @@ const AddProductModal = ({
         );
         if (!response.ok) throw new Error("Failed to fetch suppliers");
         const data = await response.json();
-        setSuppliers(data);
+
+        // ✅ Ensure suppliers is always array
+        setSuppliers(data.suppliers || []);
       } catch (err) {
         console.error("Error fetching suppliers:", err);
         toast.error("Failed to load suppliers ❌");
@@ -174,14 +176,14 @@ const AddProductModal = ({
               {/* Title */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Title *
+                  Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="title"
                   value={addFormData.title}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px]"
+                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -189,14 +191,14 @@ const AddProductModal = ({
               {/* Brand */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Brand *
+                  Brand <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="brand"
                   value={addFormData.brand}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px]"
+                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -204,32 +206,29 @@ const AddProductModal = ({
               {/* Supplier Dropdown */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Supplier *
+                  Supplier <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="supplierId"
                   value={addFormData.supplierId}
                   onChange={handleAddInputChange}
-                  className="w-full p-2 border rounded-md text-[14px]"
+                  className="w-full p-2 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Select Supplier</option>
-                  {loadingSuppliers ? (
-                    <option disabled>Loading suppliers...</option>
-                  ) : (
-                    suppliers.map((supplier) => (
-                      <option key={supplier.id} value={supplier.id}>
-                        {supplier.name} ({supplier.company || "No Company"})
+                  {!loadingSuppliers &&
+                    suppliers.map((supplier, index) => (
+                      <option key={supplier.id || index} value={supplier.id}>
+                        {supplier.name} ({supplier.companyName || "No Company"})
                       </option>
-                    ))
-                  )}
+                    ))}
                 </select>
               </div>
 
               {/* Selling Price */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Selling Price ($)
+                  Selling Price ($) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -237,7 +236,7 @@ const AddProductModal = ({
                   name="sellingPrice"
                   value={addFormData.sellingPrice}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px]"
+                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -245,7 +244,7 @@ const AddProductModal = ({
               {/* Cost Price */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Discount Price ($)
+                  Discount Price ($) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -253,7 +252,7 @@ const AddProductModal = ({
                   name="costPrice"
                   value={addFormData.costPrice}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px]"
+                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -261,14 +260,14 @@ const AddProductModal = ({
               {/* Stock */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Stock *
+                  Stock <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   name="stock"
                   value={addFormData.stock}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px]"
+                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -276,13 +275,13 @@ const AddProductModal = ({
               {/* Unit */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Unit *
+                  Unit <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="unit"
                   value={addFormData.unit}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px]"
+                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="PIECE">PIECE</option>
@@ -296,13 +295,13 @@ const AddProductModal = ({
               {/* Status */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Status *
+                  Status <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="status"
                   value={addFormData.status}
-                  onChange={handleAddInputChange}
-                  className="w-full p-2 border rounded-md text-[14px]"
+                  onChange={handleAddInputChange} 
+                  className="w-full p-2 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="ACTIVE">ACTIVE</option>
@@ -321,34 +320,34 @@ const AddProductModal = ({
                   name="discount"
                   value={addFormData.discount}
                   readOnly
-                  className="w-full p-1.5 border rounded-md text-[14px] bg-gray-100"
+                  className="w-full p-1.5 border rounded-md text-[14px] bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               {/* Barcode */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Barcode
+                  Barcode <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="barcode"
                   value={addFormData.barcode}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px]"
+                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               {/* Category */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Category *
+                  Category <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="category"
                   value={addFormData.category}
                   onChange={handleAddInputChange}
-                  className="w-full p-2 border rounded-md text-[14px]"
+                  className="w-full p-2 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Select Category</option>
@@ -363,7 +362,7 @@ const AddProductModal = ({
               {/* Image */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-black mb-1">
-                  Image *
+                  Image
                 </label>
                 <div className="flex items-center space-x-4">
                   <div className="relative">
@@ -401,7 +400,7 @@ const AddProductModal = ({
                 value={addFormData.description}
                 onChange={handleAddInputChange}
                 rows="3"
-                className="w-full p-1.5 border rounded-md text-[14px]"
+                className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
               ></textarea>
             </div>
 
@@ -410,13 +409,13 @@ const AddProductModal = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3 py-1 border border-gray-300 rounded-md"
+                className="px-3 py-2 border bg-gray-300 rounded-md"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-3 py-1 bg-blue-500 text-white rounded-md"
+                className="px-3 py-2 bg-blue-600 text-white rounded-md"
                 disabled={loading}
               >
                 {loading ? "Adding..." : "Add Product"}

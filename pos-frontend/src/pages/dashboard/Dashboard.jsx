@@ -521,7 +521,7 @@ const Dashboard = () => {
                             {order.customer?.name || order.customer}
                           </td>
                           <td className="py-3 font-bold text-[15px]">
-                            ${order.amount}
+                            ${Number(order.amount).toFixed(2)}
                           </td>
                           <td className="py-3">
                             <span

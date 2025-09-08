@@ -144,7 +144,7 @@ const Orders = () => {
                           .join(", ")}
                       </td>
                       <td className="py-4 px-4 border-r border-gray-200">
-                        ${order.amount.toFixed(2)}
+                        ${Number(order.amount).toFixed(2)}
                       </td>
                       <td className="py-4 px-4 border-r border-gray-200">
                         <span

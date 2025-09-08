@@ -518,18 +518,6 @@ const Cashier = () => {
             </span>
           </div>
 
-          {/* Discount */}
-          {/* {settings.discount > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-black font-semibold text-[15px]">
-                Discount ({settings.discount}%)
-              </span>
-              <span className="text-red-500 font-medium">
-                -${discountAmount.toFixed(2)}
-              </span>
-            </div>
-          )} */}
-
           {/* Tax */}
           {settings.taxEnabled && (
             <div className="flex justify-between">
@@ -537,7 +525,9 @@ const Cashier = () => {
                 Tax ({settings.taxRate}%)
                 {settings.taxInclusive ? " (Included)" : ""}
               </span>
-              <span className="font-medium text-black">${tax.toFixed(2)}</span>
+              <span className="font-medium text-black">
+                ${Number((subtotal * (settings.taxRate / 100)).toFixed(2))}
+              </span>
             </div>
           )}
 
@@ -546,7 +536,17 @@ const Cashier = () => {
           {/* Total */}
           <div className="flex justify-between text-[15px]">
             <span className="font-semibold">Total:</span>
-            <span className="text-black font-bold">${total.toFixed(2)}</span>
+            <span className="text-black font-bold">
+              $
+              {Number(
+                (
+                  subtotal +
+                  (settings.taxEnabled
+                    ? subtotal * (settings.taxRate / 100)
+                    : 0)
+                ).toFixed(2)
+              )}
+            </span>
           </div>
         </div>
 

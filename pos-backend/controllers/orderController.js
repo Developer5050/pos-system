@@ -5,7 +5,14 @@ const createOrder = async (req, res) => {
   try {
     const { customerName, email, phone, address, items, status } = req.body;
 
-    if (!customerName || !email || !phone || !address || !items || items.length === 0) {
+    if (
+      !customerName ||
+      !email ||
+      !phone ||
+      !address ||
+      !items ||
+      items.length === 0
+    ) {
       return res.status(400).json({
         message: "customerName, email, phone, address and items are required",
       });
@@ -59,11 +66,17 @@ const createOrder = async (req, res) => {
       }
     });
 
-    // ✅ Get Tax Settings
+    // Get tax settings
     const settings = await prisma.settings.findFirst();
-    const tax = settings?.taxEnabled ? Number(settings.taxRate || 0) : 0;
+    let tax = 0;
 
-    const totalAmount = subtotal + tax;
+    if (settings?.taxEnabled) {
+      // Tax = subtotal * (taxRate / 100)
+      tax = +(subtotal * (settings.taxRate / 100)).toFixed(2);
+    }
+
+    // Total = subtotal + tax
+    const totalAmount = +(subtotal + tax).toFixed(2);
     const orderNumber = `ORD-${Date.now()}`;
 
     // ✅ Create order

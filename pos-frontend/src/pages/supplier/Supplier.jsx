@@ -67,7 +67,6 @@ const Supplier = () => {
               <th className="p-3 border">Company</th>
               <th className="p-3 border">Phone</th>
               <th className="p-3 border">Email</th>
-              <th className="p-3 border">Product Type</th>
               <th className="p-3 border">Action</th>
             </tr>
           </thead>
@@ -79,9 +78,6 @@ const Supplier = () => {
                   <td className="p-3 border">{s.company}</td>
                   <td className="p-3 border">{s.phone}</td>
                   <td className="p-3 border">{s.email}</td>
-                  <td className="p-3 border">
-                    {s.products.map((p) => p.type).join(", ")}
-                  </td>
                   <td className="p-3 border flex gap-2">
                     <FiEye
                       className="text-blue-600 cursor-pointer"

@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
-const AddProductModal = ({ categories, onClose, setProducts, products, setCurrentPage }) => {
+const AddProductModal = ({
+  categories,
+  onClose,
+  setProducts,
+  products,
+  setCurrentPage,
+}) => {
+  const [suppliers, setSuppliers] = useState([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(true);
+
   const [addFormData, setAddFormData] = useState({
     title: "",
     description: "",
@@ -13,6 +22,7 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
     discount: "0",
     barcode: "",
     category: "",
+    supplierId: "", 
     image: "",
     status: "Active",
     imageFile: null,
@@ -21,7 +31,27 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
 
   const [loading, setLoading] = useState(false);
 
-  // Handle image upload for add form
+  // 🔹 Fetch all suppliers from backend
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/supplier/get-all-suppliers"
+        );
+        if (!response.ok) throw new Error("Failed to fetch suppliers");
+        const data = await response.json();
+        setSuppliers(data);
+      } catch (err) {
+        console.error("Error fetching suppliers:", err);
+        toast.error("Failed to load suppliers ❌");
+      } finally {
+        setLoadingSuppliers(false);
+      }
+    };
+    fetchSuppliers();
+  }, []);
+
+  // Handle image upload
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -37,66 +67,35 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
     }
   };
 
-  // Calculate discount price addform
+  // Calculate discount %
   useEffect(() => {
-    const calculateDiscount = () => {
-      const sellingPrice = parseFloat(addFormData.sellingPrice);
-      const discountPrice = parseFloat(addFormData.costPrice);
+    const sellingPrice = parseFloat(addFormData.sellingPrice);
+    const costPrice = parseFloat(addFormData.costPrice);
 
-      if (sellingPrice && discountPrice && sellingPrice > 0) {
-        if (discountPrice < sellingPrice) {
-          // Normal discount: discount price is lower than selling price
-          const discountPercent =
-            ((sellingPrice - discountPrice) / sellingPrice) * 100;
-          setAddFormData((prev) => ({
-            ...prev,
-            discount: discountPercent.toFixed(2),
-          }));
-        } else if (discountPrice > sellingPrice) {
-          // Price increase: show negative discount (or 0 if you prefer)
-          const discountPercent =
-            ((sellingPrice - discountPrice) / sellingPrice) * 100;
-          setAddFormData((prev) => ({
-            ...prev,
-            discount: discountPercent.toFixed(2), // This will be negative
-          }));
-        } else {
-          // Prices are equal
-          setAddFormData((prev) => ({
-            ...prev,
-            discount: "0",
-          }));
-        }
-      } else {
-        // Reset discount if prices are invalid
-        setAddFormData((prev) => ({
-          ...prev,
-          discount: "0",
-        }));
-      }
-    };
-
-    calculateDiscount();
-  }, [addFormData.sellingPrice, addFormData.costPrice]);
-
-  // Handle form input changes for add modal
-  const handleAddInputChange = (e) => {
-    const { name, value } = e.target;
-
-    if (name === "costPrice" || name === "sellingPrice") {
+    if (sellingPrice && costPrice && sellingPrice > 0) {
+      const discountPercent = ((sellingPrice - costPrice) / sellingPrice) * 100;
       setAddFormData((prev) => ({
         ...prev,
-        [name]: value,
+        discount: discountPercent.toFixed(2),
       }));
     } else {
       setAddFormData((prev) => ({
         ...prev,
-        [name]: value,
+        discount: "0",
       }));
     }
+  }, [addFormData.sellingPrice, addFormData.costPrice]);
+
+  // Handle input change
+  const handleAddInputChange = (e) => {
+    const { name, value } = e.target;
+    setAddFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  // Handle add form submission
+  // Handle submit
   const handleAddSubmit = async (e) => {
     e.preventDefault();
 
@@ -106,9 +105,7 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
       const user = JSON.parse(localStorage.getItem("user"));
       const currentUserId = user?.id;
 
-      if (!currentUserId) {
-        throw new Error("User is not logged in");
-      }
+      if (!currentUserId) throw new Error("User is not logged in");
 
       const formData = new FormData();
       formData.append("title", addFormData.title);
@@ -123,6 +120,7 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
       formData.append("description", addFormData.description || "");
       formData.append("category", addFormData.category || "");
       formData.append("discount", addFormData.discount || "0");
+      formData.append("supplierId", addFormData.supplierId); // 👈 supplier id
 
       if (addFormData.imageFile) {
         formData.append("image", addFormData.imageFile);
@@ -148,7 +146,7 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
 
       toast.success("✅ Product added successfully");
       onClose();
-      setCurrentPage(1); // Reset to first page after adding
+      setCurrentPage(1);
     } catch (err) {
       console.error("Error adding product:", err);
       toast.error(err.message || "❌ Failed to add product");
@@ -162,9 +160,7 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
       <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-4">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800">
-              Add New Product
-            </h2>
+            <h2 className="text-xl font-bold text-gray-800">Add New Product</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700"
@@ -175,34 +171,62 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
 
           <form onSubmit={handleAddSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Title */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Title <span className="text-red-500">*</span>
+                  Title *
                 </label>
                 <input
                   type="text"
                   name="title"
                   value={addFormData.title}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-1.5 border rounded-md text-[14px]"
                   required
                 />
               </div>
 
+              {/* Brand */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Brand <span className="text-red-500">*</span>
+                  Brand *
                 </label>
                 <input
                   type="text"
                   name="brand"
                   value={addFormData.brand}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-1.5 border rounded-md text-[14px]"
                   required
                 />
               </div>
 
+              {/* Supplier Dropdown */}
+              <div>
+                <label className="block text-sm font-bold text-black mb-1">
+                  Supplier *
+                </label>
+                <select
+                  name="supplierId"
+                  value={addFormData.supplierId}
+                  onChange={handleAddInputChange}
+                  className="w-full p-2 border rounded-md text-[14px]"
+                  required
+                >
+                  <option value="">Select Supplier</option>
+                  {loadingSuppliers ? (
+                    <option disabled>Loading suppliers...</option>
+                  ) : (
+                    suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.name} ({supplier.company || "No Company"})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              {/* Selling Price */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
                   Selling Price ($)
@@ -213,14 +237,15 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
                   name="sellingPrice"
                   value={addFormData.sellingPrice}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-1.5 border rounded-md text-[14px]"
                   required
                 />
               </div>
 
+              {/* Cost Price */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Discount Price ($) <span className="text-red-500">*</span>
+                  Discount Price ($)
                 </label>
                 <input
                   type="number"
@@ -228,34 +253,36 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
                   name="costPrice"
                   value={addFormData.costPrice}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-1.5 border rounded-md text-[14px]"
                   required
                 />
               </div>
 
+              {/* Stock */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Stock <span className="text-red-500">*</span>
+                  Stock *
                 </label>
                 <input
                   type="number"
                   name="stock"
                   value={addFormData.stock}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-1.5 border rounded-md text-[14px]"
                   required
                 />
               </div>
 
+              {/* Unit */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Unit <span className="text-red-500">*</span>
+                  Unit *
                 </label>
                 <select
                   name="unit"
                   value={addFormData.unit}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-1.5 border rounded-md text-[14px]"
                   required
                 >
                   <option value="PIECE">PIECE</option>
@@ -266,15 +293,16 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
                 </select>
               </div>
 
+              {/* Status */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Status <span className="text-red-500">*</span>
+                  Status *
                 </label>
                 <select
                   name="status"
                   value={addFormData.status}
                   onChange={handleAddInputChange}
-                  className="w-full p-2 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border rounded-md text-[14px]"
                   required
                 >
                   <option value="ACTIVE">ACTIVE</option>
@@ -282,43 +310,45 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
                 </select>
               </div>
 
+              {/* Discount */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Discount (%) <span className="text-red-500">*</span>
+                  Discount (%)
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   name="discount"
                   value={addFormData.discount}
-                  onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   readOnly
+                  className="w-full p-1.5 border rounded-md text-[14px] bg-gray-100"
                 />
               </div>
 
+              {/* Barcode */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Barcode <span className="text-red-500">*</span>
+                  Barcode
                 </label>
                 <input
                   type="text"
                   name="barcode"
                   value={addFormData.barcode}
                   onChange={handleAddInputChange}
-                  className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-1.5 border rounded-md text-[14px]"
                 />
               </div>
 
+              {/* Category */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Category <span className="text-red-500">*</span>
+                  Category *
                 </label>
                 <select
                   name="category"
                   value={addFormData.category}
                   onChange={handleAddInputChange}
-                  className="w-full p-2 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border rounded-md text-[14px]"
                   required
                 >
                   <option value="">Select Category</option>
@@ -330,9 +360,10 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
                 </select>
               </div>
 
+              {/* Image */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-black mb-1">
-                  Image <span className="text-red-500">*</span>
+                  Image *
                 </label>
                 <div className="flex items-center space-x-4">
                   <div className="relative">
@@ -349,23 +380,18 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
                     )}
                   </div>
                   <div className="flex-1">
-                    <label className="block">
-                      <span className="sr-only">Choose product image</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                    </label>
-                    <p className="text-xs text-gray-500 mt-1">
-                      JPG, JPEG, PNG or GIF (Max 2MB)
-                    </p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="block w-full text-sm text-gray-500"
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Description */}
             <div>
               <label className="block text-sm font-bold text-black mb-1">
                 Description
@@ -375,21 +401,22 @@ const AddProductModal = ({ categories, onClose, setProducts, products, setCurren
                 value={addFormData.description}
                 onChange={handleAddInputChange}
                 rows="3"
-                className="w-full p-1.5 border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-1.5 border rounded-md text-[14px]"
               ></textarea>
             </div>
 
+            {/* Buttons */}
             <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+                className="px-3 py-1 border border-gray-300 rounded-md"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                className="px-3 py-1 bg-blue-500 text-white rounded-md"
                 disabled={loading}
               >
                 {loading ? "Adding..." : "Add Product"}

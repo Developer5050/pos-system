@@ -18,13 +18,13 @@ const Products = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   const itemsPerPage = 5;
 
   // Filter products based on search term and status filter
   const filteredProducts = products.filter((product) => {
-  const matchesSearch = product.title
-      .toLowerCase()
+    const matchesSearch = product.title
+      ?.toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "All" || product.status === statusFilter;
@@ -41,54 +41,53 @@ const Products = () => {
     startIndex + itemsPerPage
   );
 
-  // Fetch products from API
-    useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          "http://localhost:5000/api/product/get-all-products"
-        );
+  // Fetch Products
+  const fetchProducts = async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+      const response = await fetch(
+        "http://localhost:5000/api/product/get-all-products"
+      );
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setProducts(data);
+      }
+    } catch (err) {
+      console.error("Error fetching products:", err);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  // Fetch Categories
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/category/get-all-category"
+      );
+
+      if (response.ok) {
         const data = await response.json();
-
-        if (Array.isArray(data)) {
-          setProducts(data);
-        } else {
-          throw new Error("Invalid data format from API");
-        }
-      } catch (err) {
-        console.error("Error fetching products:", err);
-      } finally {
-        setLoading(false);
+        setCategories(data);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
 
-
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:5000/api/category/get-all-category"
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setCategories(data);
-        }
-      } catch (err) {
-        console.error("Error fetching categories:", err);
-      }
-    };
-
+  // Initial load + background refresh
+  useEffect(() => {
     fetchProducts();
     fetchCategories();
 
-    // Set up WebSocket or polling to get real-time stock updates
-    const stockUpdateInterval = setInterval(fetchProducts, 30000);
+    // background refresh every 30s
+    const stockUpdateInterval = setInterval(() => fetchProducts(true), 30000);
 
     return () => clearInterval(stockUpdateInterval);
   }, []);
@@ -98,35 +97,30 @@ const Products = () => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter]);
 
-  // Open add product modal
-  const openAddModal = () => {
-    setIsAddModalOpen(true);
-  };
+  // Modal Handlers
+  const openAddModal = () => setIsAddModalOpen(true);
+  const closeAddModal = () => setIsAddModalOpen(false);
 
-  // Close add product modal
-  const closeAddModal = () => {
-    setIsAddModalOpen(false);
-  };
-
-  // Open edit modal and populate form with product data
   const handleEditClick = (product) => {
     setEditingProduct(product);
     setIsEditModalOpen(true);
   };
 
-  // Open delete confirmation modal
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingProduct(null);
+  };
+
   const openDeleteModal = (product) => {
     setProductToDelete(product);
     setDeleteModalOpen(true);
   };
 
-  // Close delete confirmation modal
   const closeDeleteModal = () => {
     setDeleteModalOpen(false);
     setProductToDelete(null);
   };
 
-  // Handle delete product confirmation
   const confirmDelete = async () => {
     if (productToDelete) {
       try {
@@ -139,7 +133,6 @@ const Products = () => {
           throw new Error(`Failed to delete product: ${res.status}`);
         }
 
-        // Update frontend state
         setProducts(products.filter((p) => p.id !== productToDelete.id));
         closeDeleteModal();
         toast.success("Product deleted successfully ✅");
@@ -150,13 +143,6 @@ const Products = () => {
     }
   };
 
-  // Close edit modal
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
-    setEditingProduct(null);
-  };
-
-  // Handle status toggle
   const toggleStatus = (id) => {
     setProducts(
       products.map((product) =>
@@ -170,7 +156,6 @@ const Products = () => {
     );
   };
 
-  // Show loading state
   if (loading) {
     return (
       <div className="p-4 bg-gray-100 min-h-screen font-ubuntu flex items-center justify-center">
@@ -222,7 +207,7 @@ const Products = () => {
       </div>
 
       {/* Products Table */}
-      <ProductTable 
+      <ProductTable
         products={currentProducts}
         onEditClick={handleEditClick}
         onDeleteClick={openDeleteModal}

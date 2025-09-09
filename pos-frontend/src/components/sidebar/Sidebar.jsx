@@ -164,7 +164,7 @@ const Sidebar = ({ onLogout }) => {
               >
                 <i className="fa-solid fa-truck mr-2"></i> Suppliers
                 <i
-                  className={`ml-auto transition-transform ${
+                  className={`ml-auto transition-transform text-[14px] mt-1 ${
                     isSuppliersOpen ? "rotate-90" : ""
                   } fa-solid fa-chevron-right`}
                 ></i>

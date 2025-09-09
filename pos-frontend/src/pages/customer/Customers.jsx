@@ -92,7 +92,7 @@ const Customers = () => {
           <input
             type="text"
             placeholder="Search customers..."
-            className="pl-3 pr-4 py-2 text-[15px] border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+            className="pl-3 pr-4 py-2 text-[15px] border rounded-md focus:outline-none  focus:border-blue-500 focus:ring-blue-500 w-full md:w-64"
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);

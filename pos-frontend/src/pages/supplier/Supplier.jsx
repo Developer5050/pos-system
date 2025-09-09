@@ -147,7 +147,7 @@ const Supplier = () => {
             </tr>
           </thead>
 
-          <tbody className="bg-white">
+          <tbody className="bg-white text-sm">
             {currentSuppliers.length > 0 ? (
               currentSuppliers.map((supplier) => (
                 <tr
@@ -257,11 +257,12 @@ const Supplier = () => {
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="border p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border p-1.5 text-sm rounded w-full focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
                     name="name"
                     value={form.name}
                     onChange={handleFormChange}
                     required
+                    placeholder="Enter your name"
                   />
                 </div>
                 <div>
@@ -270,11 +271,12 @@ const Supplier = () => {
                   </label>
                   <input
                     type="email"
-                    className="border p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border p-1.5 text-sm rounded w-full focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
                     name="email"
                     value={form.email}
                     onChange={handleFormChange}
                     required
+                    placeholder="Enter your email"
                   />
                 </div>
                 <div>
@@ -282,11 +284,12 @@ const Supplier = () => {
                     Phone <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="border p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border p-1.5 text-sm rounded w-full focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
                     name="phone"
                     value={form.phone}
                     onChange={handleFormChange}
                     required
+                    placeholder="Enter your phone"
                   />
                 </div>
                 <div>
@@ -294,25 +297,27 @@ const Supplier = () => {
                     Address <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="border p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border p-1.5 text-sm rounded w-full focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
                     name="address"
                     value={form.address}
                     onChange={handleFormChange}
                     required
+                    placeholder="Enter your address"
                   />
                 </div>
                 <div className="col-span-2">
                   <label className="block font-medium mb-1">Company</label>
                   <input
-                    className="border p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border p-1.5 text-sm rounded w-full focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
                     name="companyName"
                     value={form.companyName}
                     onChange={handleFormChange}
+                    placeholder="Company name"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end mt-6">
+              <div className="flex justify-end mt-10">
                 <button
                   type="button"
                   onClick={handleCloseModal}

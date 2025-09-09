@@ -11,7 +11,6 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 
-// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -291,17 +290,6 @@ const Dashboard = () => {
 
     fetchLowStock();
   }, []);
-
-  // Low Stock Items
-  // const lowStockItems = [
-  //   { name: "Coffee Beans", stock: 8 },
-  //   { name: "Paper Cups", stock: 12 },
-  //   { name: "Chocolate Syrup", stock: 5 },
-  //   { name: "Napkins", stock: 15 },
-  //   { name: "Straws", stock: 10 },
-  //   { name: "Milk", stock: 7 },
-  //   { name: "Sugar Packets", stock: 20 },
-  // ];
 
   // Chart Config
   const chartOptions = {

@@ -54,6 +54,8 @@ model Product {
   createdById  Int?
   createdBy User? @relation(fields: [createdById], references: [id])
 
+  transactionItems TransactionItem[]
+
   supplierId   Int?
   supplier     Supplier?     @relation(fields: [supplierId], references: [id])
   
@@ -181,7 +183,31 @@ model Supplier {
 
   products    Product[] 
 
+  transactions Transaction[]
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model Transaction {
+  id Int @id @default(autoincrement())
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+  supplierId Int
+  items TransactionItem[]
+  totalAmount Float @default(0)
+  paidAmount Float @default(0)
+  dueAmount Float @default(0)
+  status String
+  createdAt DateTime @default(now())
+}
+
+model TransactionItem {
+  id Int @id @default(autoincrement())
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  transactionId Int
+  product Product @relation(fields: [productId], references: [id])
+  productId Int
+  quantity Int
+  price Float
 }
 

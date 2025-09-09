@@ -13,6 +13,7 @@ const customerRoute = require("./routes/customerRoute");
 const dashboardRoute = require("./routes/statsRoute");
 const settingRoute = require("./routes/settingRoutes");
 const supplierRoute = require("./routes/supplierRoute");
+const transactionRoute = require("./routes/transactionRoute");
 
 // PORT
 const port = process.env.PORT;
@@ -35,6 +36,7 @@ app.use("/api/customer", customerRoute);
 app.use("/api/dashboard", dashboardRoute);
 app.use("/api/setting", settingRoute);
 app.use("/api/supplier", supplierRoute);
+app.use("/api/transaction", transactionRoute);
 
 // Start Server
 app.listen(port, () => {

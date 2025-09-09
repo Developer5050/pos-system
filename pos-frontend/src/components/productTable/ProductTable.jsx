@@ -146,8 +146,8 @@ const ProductTable = ({
                 <td className="py-4 px-2 text-sm text-gray-500 border-r border-gray-200">
                   {product.updatedAt}
                 </td>
-                <td className="py-4 px-4 border-r border-gray-200">
-                  <div className="flex space-x-2">
+                <td className="py-4 px-4 border-r border-gray-200 text-sm">
+                  <div className="flex justify-center items-center space-x-2">
                     <button
                       className="text-green-500 hover:text-green-700"
                       onClick={() => onEditClick(product)}

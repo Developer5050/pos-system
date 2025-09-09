@@ -340,7 +340,7 @@ const Category = () => {
                         <td className="py-4 px-4 text-sm text-gray-500 border-r border-gray-200">
                           {category.createdAt}
                         </td>
-                        <td className="py-4 px-4 border-r border-gray-200 text-center">
+                        <td className="py-4 px-4 border-r border-gray-200 text-center text-sm">
                           <div className="flex justify-center space-x-3">
                             <button
                               className="text-green-500 hover:text-green-700"
@@ -455,14 +455,16 @@ const Category = () => {
               </h3>
 
               <p className="text-sm text-gray-500 text-center mb-6">
-                Are you sure you want to delete the category "
-                {categoryToDelete?.name}"? This action cannot be undone.
+                Are you sure you want to delete the category {""}
+                <span className="text-black font-bold">
+                  {categoryToDelete?.name}?
+                </span>
               </p>
 
               <div className="flex justify-center space-x-3">
                 <button
                   onClick={closeDeleteModal}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
                   disabled={deleteLoading}
                 >
                   Cancel

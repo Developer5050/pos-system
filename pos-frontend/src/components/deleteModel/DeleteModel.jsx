@@ -28,15 +28,15 @@ const DeleteModal = ({ product, onClose, onConfirm }) => {
             Delete Product
           </h3>
 
-          <p className="text-sm text-gray-500 text-center mb-6">
-            Are you sure you want to delete the product "
-            {product?.title}"? This action cannot be undone.
+          <p className="text-sm text-black text-center mb-6">
+            Are you sure you want to delete the product
+            <span className="text-black font-bold">"{product?.title}"?</span>
           </p>
 
           <div className="flex justify-center space-x-3">
             <button
               onClick={onClose}
-              className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
             >
               Cancel
             </button>

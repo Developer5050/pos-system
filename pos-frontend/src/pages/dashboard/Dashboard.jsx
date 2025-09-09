@@ -435,7 +435,7 @@ const Dashboard = () => {
                     onClick={() => setTimeRange(range)}
                     className={`px-4 py-1.5 text-sm rounded-md font-medium transition-colors ${
                       timeRange === range
-                        ? "bg-blue-600 text-white"
+                        ? " bg-blue-600 hover:bg-blue-500 text-white"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     }`}
                   >
@@ -465,7 +465,7 @@ const Dashboard = () => {
               <h2 className="text-lg font-bold text-gray-800">Latest Orders</h2>
               <button
                 onClick={() => setShowAllOrders(!showAllOrders)}
-                className="text-white bg-blue-600 text-sm rounded-md font-medium px-3 py-1.5"
+                className="text-white bg-blue-600 hover:bg-blue-500 text-sm rounded-md font-medium px-3 py-1.5"
               >
                 {showAllOrders ? "Show Less" : "View All"}
               </button>

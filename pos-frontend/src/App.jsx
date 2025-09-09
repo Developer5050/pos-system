@@ -17,7 +17,7 @@ import Settings from "./pages/setting/Settings";
 import SignUp from "./pages/signup/SignUp";
 import Login from "./pages/login/Login";
 import Supplier from "./pages/supplier/Supplier";
-import Transactions from "./pages/transaction/Transactions";
+import ProductListing from "./pages/productListing/ProductListing";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -133,8 +133,8 @@ const App = () => {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/suppliers" element={<Supplier />} />
                   <Route
-                    path="/suppliers/transaction"
-                    element={<Transactions />}
+                    path="/suppliers/productListing"
+                    element={<ProductListing />}
                   />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

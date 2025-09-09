@@ -190,7 +190,7 @@ const Sidebar = ({ onLogout }) => {
                   </li>
                   <li className="mb-1">
                     <NavLink
-                      to="/suppliers/transaction"
+                      to="/suppliers/productListing"
                       className={({ isActive }) =>
                         `flex items-center p-1.5 rounded-lg ${
                           isActive
@@ -199,7 +199,7 @@ const Sidebar = ({ onLogout }) => {
                         }`
                       }
                     >
-                      Transaction
+                      Product Listing
                     </NavLink>
                   </li>
                 </ul>

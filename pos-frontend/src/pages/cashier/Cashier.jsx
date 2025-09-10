@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
-import { FaFilter } from "react-icons/fa";
+import { FaFilter, FaPrint } from "react-icons/fa";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
@@ -17,8 +17,11 @@ const Cashier = () => {
   const [orderItems, setOrderItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
 
   const navigate = useNavigate();
+  const receiptRef = useRef();
 
   const [userDetails, setUserDetails] = useState({
     name: "",
@@ -202,14 +205,12 @@ const Cashier = () => {
   const discountAmount = subtotal * (settings.discount / 100) || 0;
   const discountedSubtotal = subtotal - discountAmount;
 
-  // Correct tax calculation
+  // ✅ Tax calculation: hamesha exact percentage
   const tax = settings.taxEnabled
-    ? settings.taxInclusive
-      ? discountedSubtotal - discountedSubtotal / (1 + settings.taxRate / 100)
-      : discountedSubtotal * (settings.taxRate / 100)
+    ? discountedSubtotal * (settings.taxRate / 100) // direct 10%
     : 0;
 
-  // ✅ Ab total hamesha subtotal (after discount) + tax hoga
+  // ✅ Total = discountedSubtotal + tax
   const total = discountedSubtotal + tax;
 
   // Place order
@@ -252,8 +253,29 @@ const Cashier = () => {
         orderData,
         { headers: { "Content-Type": "application/json" } }
       );
+
+      // Generate receipt data
+      setReceiptData({
+        orderId: res.data.orderId || Date.now(),
+        customerName: userDetails.name,
+        email: userDetails.email,
+        phone: userDetails.phone,
+        address: userDetails.address,
+        items: orderItems,
+        subtotal,
+        discount: settings.discount,
+        discountAmount,
+        tax,
+        total,
+        paymentMethod: userDetails.paymentMethod,
+        date: new Date().toLocaleString(),
+      });
+
       toast.success("✅ Order placed successfully!");
       setShowPaymentModal(false);
+      setShowReceipt(true);
+
+      // Reset order items and user details without refreshing
       setOrderItems([]);
       setUserDetails({
         name: "",
@@ -262,7 +284,7 @@ const Cashier = () => {
         address: "",
         paymentMethod: "COD",
       });
-      navigate("/cashier");
+
       console.log("Order response:", res.data);
     } catch (error) {
       console.error("Order error:", error);
@@ -272,6 +294,165 @@ const Cashier = () => {
         toast.error("❌ Something went wrong while placing the order");
       }
     }
+  };
+
+  // Print receipt
+  const handlePrintReceipt = () => {
+    const receiptContent = receiptRef.current;
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+    <html>
+      <head>
+        <title>Receipt</title>
+        <style>
+          body { font-family: Arial, sans-serif, ubuntu; margin: 20px; }
+          .receipt { border: 1px solid #000; padding: 20px; max-width: 800px; margin: 0 auto; }
+          .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+
+          /* Customer Table */
+          .customer-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          .customer-table th, .customer-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+          }
+          .customer-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+          }
+
+          /* Items Table */
+          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          .items-table th, .items-table td { 
+            padding: 8px; 
+            text-align: center; 
+            border: 1px solid #ddd; 
+          }
+          .items-table th { background-color: #f2f2f2; font-weight: bold; }
+
+          /* Summary Table (Right Side) */
+          .summary { width: 40%; margin-left: auto; border-collapse: collapse; margin-top: 20px; }
+          .summary td { padding: 6px; border: none; }
+          .summary .label { text-align: left; font-weight: 600; }
+          .summary .value { text-align: right; font-weight: bold; }
+          .summary .total { font-size: 16px; font-weight: bold; border-top: 2px solid #000; padding-top: 8px; }
+
+          .thank-you { text-align: center; margin-top: 20px; font-style: italic; border-top: 1px solid #000; padding-top: 10px; }
+          
+          @media print {
+            body { margin: 0; }
+            .receipt { border: none; padding: 15px; max-width: 100%; }
+          }
+        </style>
+      </head>
+      <body onload="window.print();">
+        <div class="receipt">
+          <div class="header">
+            <h2>POS System</h2>
+            <p>Receipt</p>
+          </div>
+
+          <!-- Customer Details -->
+          <!-- Customer Details -->
+<table class="customer-table" style="font-family: Ubuntu, Arial, sans-serif; width:100%; border-collapse: collapse; margin-bottom: 20px;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #ddd; padding:8px; background:#f2f2f2;">Customer Name</th>
+      <th style="border:1px solid #ddd; padding:8px; background:#f2f2f2;">Email</th>
+      <th style="border:1px solid #ddd; padding:8px; background:#f2f2f2;">Phone</th>
+      <th style="border:1px solid #ddd; padding:8px; background:#f2f2f2;">Address</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #ddd; padding:8px;">${
+        receiptData.customerName || "N/A"
+      }</td>
+      <td style="border:1px solid #ddd; padding:8px;">${
+        receiptData.email || "N/A"
+      }</td>
+      <td style="border:1px solid #ddd; padding:8px;">${
+        receiptData.phone || "N/A"
+      }</td>
+      <td style="border:1px solid #ddd; padding:8px;">${
+        receiptData.address || "N/A"
+      }</td>
+    </tr>
+  </tbody>
+</table>
+
+
+          <!-- Order Items -->
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${receiptData.items
+                .map(
+                  (item) => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.quantity}</td>
+                  <td>$${item.price.toFixed(2)}</td>
+                  <td>$${(item.price * item.quantity).toFixed(2)}</td>
+                </tr>`
+                )
+                .join("")}
+            </tbody>
+          </table>
+
+          <!-- Order Summary (Right Side) -->
+          <table class="summary">
+            <tr>
+              <td class="label">Subtotal:</td>
+              <td class="value">$${receiptData.subtotal.toFixed(2)}</td>
+            </tr>
+
+            ${
+              receiptData.discount > 0
+                ? `
+              <tr>
+                <td class="label">Discount (${receiptData.discount}%):</td>
+                <td class="value">-$${receiptData.discountAmount.toFixed(
+                  2
+                )}</td>
+              </tr>`
+                : ""
+            }
+
+            <tr>
+              <td class="label">Tax:</td>
+              <td class="value">$${receiptData.tax.toFixed(2)}</td>
+            </tr>
+
+            <tr>
+              <td class="label total">Total:</td>
+              <td class="value total">$${receiptData.total.toFixed(2)}</td>
+            </tr>
+
+            <tr>
+              <td class="label">Payment Method:</td>
+              <td class="value">${receiptData.paymentMethod || "COD"}</td>
+            </tr>
+          </table>
+
+          <div class="thank-you">Thank you for your purchase!</div>
+        </div>
+      </body>
+    </html>
+  `);
+    printWindow.document.close();
+  };
+
+  // Close receipt
+  const handleCloseReceipt = () => {
+    setShowReceipt(false);
   };
 
   if (isLoading)
@@ -518,6 +699,18 @@ const Cashier = () => {
             </span>
           </div>
 
+          {/* Discount */}
+          {settings.discount > 0 && (
+            <div className="flex justify-between">
+              <span className="text-black text-[15px] font-semibold">
+                Discount ({settings.discount}%)
+              </span>
+              <span className="font-medium text-black">
+                -${discountAmount.toFixed(2)}
+              </span>
+            </div>
+          )}
+
           {/* Tax */}
           {settings.taxEnabled && (
             <div className="flex justify-between">
@@ -525,9 +718,7 @@ const Cashier = () => {
                 Tax ({settings.taxRate}%)
                 {settings.taxInclusive ? " (Included)" : ""}
               </span>
-              <span className="font-medium text-black">
-                ${Number((subtotal * (settings.taxRate / 100)).toFixed(2))}
-              </span>
+              <span className="font-medium text-black">${tax.toFixed(2)}</span>
             </div>
           )}
 
@@ -536,17 +727,7 @@ const Cashier = () => {
           {/* Total */}
           <div className="flex justify-between text-[15px]">
             <span className="font-semibold">Total:</span>
-            <span className="text-black font-bold">
-              $
-              {Number(
-                (
-                  subtotal +
-                  (settings.taxEnabled
-                    ? subtotal * (settings.taxRate / 100)
-                    : 0)
-                ).toFixed(2)
-              )}
-            </span>
+            <span className="text-black font-bold">${total.toFixed(2)}</span>
           </div>
         </div>
 
@@ -663,6 +844,152 @@ const Cashier = () => {
                 onClick={handlePlaceOrder}
               >
                 Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt Modal */}
+      {showReceipt && receiptData && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 animate-fadeIn">
+            <h2 className="text-xl font-bold text-gray-800 mb-2 text-center border-b pb-2">
+              🧾 Order Receipt
+            </h2>
+
+            <div ref={receiptRef} className="receipt-content text-sm">
+              {/* Header */}
+              <div className="text-center mb-2">
+                <h3 className="font-bold text-lg">INVOICE</h3>
+                <p>
+                  <span className="font-bold">Order #:</span>{" "}
+                  {receiptData.orderId}
+                </p>
+                <p>
+                  <span className="font-bold">Date:</span> {receiptData.date}
+                </p>
+              </div>
+
+              {/* Customer Details */}
+              <h4 className="font-semibold border-b">Customer Details</h4>
+              <table className="w-full mb-2 border">
+                <thead className="bg-black border-collapse">
+                  <tr>
+                    <th className="p-1 text-center text-white border">Name</th>
+                    <th className="p-1 text-center text-white border">Email</th>
+                    <th className="p-1 text-center text-white border">Phone</th>
+                    <th className="p-1 text-center text-white border">
+                      Address
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t">
+                    <td className="p-1 text-center border">
+                      {receiptData.customerName}
+                    </td>
+                    <td className="p-1 text-center border">
+                      {receiptData.email}
+                    </td>
+                    <td className="p-1 text-center border">
+                      {receiptData.phone}
+                    </td>
+                    <td className="p-1 text-center border">
+                      {receiptData.address}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Order Items */}
+              <h4 className="font-semibold border-b">Order Items</h4>
+              <table className="w-full mb-2 border">
+                <thead className="bg-black border-collapse">
+                  <tr>
+                    <th className="p-1 text-center text-white border">
+                      Product
+                    </th>
+                    <th className="p-1 text-center text-white border">Qty</th>
+                    <th className="p-1 text-center text-white border">Price</th>
+                    <th className="p-1 text-center text-white border">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receiptData.items.map((item) => (
+                    <tr key={item.id} className="border-t">
+                      <td className="p-1 text-center border">{item.name}</td>
+                      <td className="p-1 text-center border">
+                        {item.quantity}
+                      </td>
+                      <td className="p-1 text-center border">
+                        ${item.price.toFixed(2)}
+                      </td>
+                      <td className="p-1 text-center border">
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Order Summary */}
+              <div className="w-full md:w-40 ml-auto">
+                <h4 className="font-semibold border-b text-right pb-1">
+                  Order Summary
+                </h4>
+
+                {/* Subtotal */}
+                <div className="flex justify-between mb-1">
+                  <span className="font-extrabold text-md">Subtotal:</span>
+                  <span>${receiptData.subtotal.toFixed(2)}</span>
+                </div>
+
+                {/* Discount (agar ho to dikhana) */}
+                {/* {receiptData.discount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">
+                      Discount ({receiptData.discount}%):
+                    </span>
+                    <span>- ${receiptData.discountAmount.toFixed(2)}</span>
+                  </div>
+                )} */}
+
+                {/* Tax */}
+                <div className="flex justify-between">
+                  <span className="font-extrabold text-md">Tax:</span>
+                  <span>${receiptData.tax.toFixed(2)}</span>
+                </div>
+
+                {/* Total */}
+                <div className="flex justify-between mt-0.5 border-t">
+                  <span className="font-semibold text-lg">Total:</span>
+                  <span className="font-semibold text-lg">
+                    ${receiptData.total.toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Payment Method */}
+                <div className="flex justify-between mt-0.5">
+                  <span className="font-semibold">Payment Method:</span>
+                  <span>{receiptData.paymentMethod || "COD"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3 mt-3">
+              <button
+                className="px-5 py-1.5 rounded-md bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition flex items-center gap-2"
+                onClick={handlePrintReceipt}
+              >
+                <FaPrint /> Print
+              </button>
+              <button
+                className="px-5 py-1.5 rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
+                onClick={handleCloseReceipt}
+              >
+                Done
               </button>
             </div>
           </div>

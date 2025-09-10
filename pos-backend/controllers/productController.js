@@ -207,10 +207,36 @@ const getProductByCategory = async (req, res) => {
   }
 };
 
+const updateStock = async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+
+    if (!productId || quantity === undefined) {
+      return res.status(400).json({ message: "Product ID and quantity required" });
+    }
+
+    const product = await prisma.product.update({
+      where: { id: Number(productId) },
+      data: {
+        stock: {
+          increment: Number(quantity), // yahan increment karenge
+        },
+      },
+    });
+
+    res.status(200).json({ message: "Stock updated", product });
+  } catch (error) {
+    console.error("Error updating stock:", error);
+    res.status(500).json({ message: "Error updating stock" });
+  }
+};
+
+
 module.exports = {
   addProduct,
   editProduct,
   getAllProducts,
   deleteProduct,
   getProductByCategory,
+  updateStock
 };

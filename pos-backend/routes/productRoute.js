@@ -7,6 +7,7 @@ const {
   getAllProducts,
   deleteProduct,
   getProductByCategory,
+  updateStock
 } = require("../controllers/productController");
 
 // get all product route
@@ -23,5 +24,7 @@ router.put("/edit-product/:id", upload.single("image"), editProduct);
 router.delete("/delete-product/:id", deleteProduct);
 // categroy by categpryId route
 router.get("/category/:categoryId", getProductByCategory);
+// stock update 
+router.put("/stock-update", updateStock)
 
 module.exports = router;

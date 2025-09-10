@@ -29,23 +29,29 @@ const createTransaction = async (req, res) => {
         if (item.productId) {
           productId = Number(item.productId);
         } else if (item.product) {
-          const product = await prisma.product.findFirst({
-            where: { title: item.product },
-          });
-          if (!product) {
-            throw new Error(`Product not found: ${item.product}`);
+          // 👇 Assume frontend sent product.id in product field
+          productId = Number(item.product);
+
+          if (isNaN(productId)) {
+            const product = await prisma.product.findFirst({
+              where: { title: item.product },
+            });
+            if (!product) {
+              throw new Error(`Product not found: ${item.product}`);
+            }
+            productId = product.id;
           }
-          productId = product.id;
         } else {
           throw new Error(
             "Each item must have either productId or product name"
           );
         }
 
-        const quantity = Number(item.quantity);
-        const price = Number(item.price);
-
-        return { productId, quantity, price };
+        return {
+          productId,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+        };
       })
     );
 
@@ -73,6 +79,17 @@ const createTransaction = async (req, res) => {
         items: { include: { product: true } },
       },
     });
+
+    for (const item of items) {
+      await prisma.product.update({
+        where: { id: Number(item.productId) },
+        data: {
+          stock: {
+            increment: Number(item.quantity),
+          },
+        },
+      });
+    }
 
     res.status(201).json({
       message: "Transaction created successfully.",
@@ -141,7 +158,6 @@ const deleteTransaction = async (req, res) => {
     res.status(500).json({ error: "Failed to delete transaction" });
   }
 };
-
 
 module.exports = {
   createTransaction,

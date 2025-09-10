@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FiTrash2, FiSearch, FiEdit } from "react-icons/fi";
+import { FiTrash2, FiSearch } from "react-icons/fi";
 
 const ProductListing = () => {
   const [transactions, setTransactions] = useState([]);
@@ -12,9 +12,10 @@ const ProductListing = () => {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const [products, setProducts] = useState([]);
   const [newTransaction, setNewTransaction] = useState({
     supplierId: "",
-    items: [{ product: "", quantity: "", price: "" }],
+    items: [{ productId: "", quantity: "", price: "" }],
     paidAmount: "",
     status: "Paid",
   });
@@ -29,6 +30,28 @@ const ProductListing = () => {
   useEffect(() => {
     applyFilters();
   }, [search, statusFilter, transactions]);
+
+  // Fetch products
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/product/get-all-products"
+      );
+      console.log("Products API Response:", res.data);
+
+      // ✅ backend returns direct array
+      setProducts(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setProducts([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+    fetchSuppliers();
+    fetchProducts(); // 👈 fetch products too
+  }, []);
 
   const fetchTransactions = async () => {
     try {
@@ -78,7 +101,7 @@ const ProductListing = () => {
   const addProductRow = () => {
     setNewTransaction((prev) => ({
       ...prev,
-      items: [...prev.items, { product: "", quantity: 0, price: 0 }],
+      items: [...prev.items, { productId: "", quantity: 0, price: 0 }],
     }));
   };
 
@@ -102,21 +125,28 @@ const ProductListing = () => {
         ...newTransaction,
         totalAmount,
         items: newTransaction.items.map((item) => ({
-          ...item,
-          quantity: +item.quantity || 0,
-          price: +item.price || 0,
+          productId: +item.productId,
+          quantity: +item.quantity,
+          price: +item.price,
         })),
         paidAmount: +newTransaction.paidAmount || 0,
       };
+
       const res = await axios.post(
         "http://localhost:5000/api/transaction/create-transaction",
         payload
       );
-      setTransactions([res.data, ...transactions]);
+
+      setTransactions([res.data.transaction, ...transactions]);
+      setFilteredTransactions([res.data.transaction, ...transactions]);
+
+      // ✅ Stock ko refresh karne ke liye products fetch karo
+      fetchProducts();
+
       setShowModal(false);
       setNewTransaction({
         supplierId: "",
-        items: [{ product: "", quantity: "", price: "" }],
+        items: [{ productId: "", quantity: "", price: "" }],
         paidAmount: "",
         status: "Paid",
       });
@@ -400,13 +430,13 @@ const ProductListing = () => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white p-5 rounded-md w-[500px] shadow-lg font-ubuntu">
             <h3 className="text-2xl font-bold mb-2 text-gray-800">
-              Create Transaction
+              Product Listing
             </h3>
 
             {/* Supplier */}
             <div className="mb-4">
               <label className="block text-md font-bold text-gray-700 mb-1">
-                Supplier
+                Supplier <span className="text-red-400">*</span>
               </label>
               <select
                 value={newTransaction.supplierId}
@@ -416,7 +446,7 @@ const ProductListing = () => {
                     supplierId: e.target.value,
                   })
                 }
-                className="border px-3 py-1.5 rounded-md w-full focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
+                className="border px-3 py-1.5 rounded-md w-full text-sm focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="">Select Supplier</option>
                 {Array.isArray(suppliers) &&
@@ -436,20 +466,25 @@ const ProductListing = () => {
 
               {newTransaction.items.map((item, idx) => (
                 <div key={idx} className="flex gap-2 mb-3 items-end">
-                  {/* Product Name */}
+                  {/* Product Dropdown */}
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Product Name
+                      Product Name <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      placeholder="Enter Product Name"
-                      value={item.product}
+                    <select
+                      value={item.productId || ""}
                       onChange={(e) =>
-                        updateItem(idx, "product", e.target.value)
+                        updateItem(idx, "productId", e.target.value)
                       }
-                      className="border px-3 py-1.5 text-[14px] rounded-md w-full focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
-                    />
+                      className="border px-3 py-1.5 text-[14px] rounded-md w-full"
+                    >
+                      <option value="">Select Product</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.title}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Quantity */}
@@ -459,12 +494,12 @@ const ProductListing = () => {
                     </label>
                     <input
                       type="number"
-                      placeholder="Qty"
+                      min={0}
                       value={item.quantity}
                       onChange={(e) =>
-                        updateItem(idx, "quantity", +e.target.value)
+                        updateItem(idx, "quantity", e.target.value)
                       }
-                      className="border px-3 py-1.5 text-[14px] rounded-md w-full text-center focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
+                      className="border px-3 py-1.5 text-[14px] rounded-md w-full"
                     />
                   </div>
 
@@ -475,12 +510,10 @@ const ProductListing = () => {
                     </label>
                     <input
                       type="number"
-                      placeholder="Price"
+                      min={0}
                       value={item.price}
-                      onChange={(e) =>
-                        updateItem(idx, "price", +e.target.value)
-                      }
-                      className="border px-3 py-1.5 text-[14px] rounded-md w-full text-center focus:outline-none  focus:border-blue-500 focus:ring-blue-500"
+                      onChange={(e) => updateItem(idx, "price", e.target.value)}
+                      className="border px-3 py-1.5 text-[14px] rounded-md w-full"
                     />
                   </div>
                 </div>
@@ -502,6 +535,7 @@ const ProductListing = () => {
               <input
                 type="number"
                 placeholder="Enter Paid Amount"
+                min={0}
                 value={newTransaction.paidAmount}
                 onChange={(e) =>
                   setNewTransaction({
@@ -516,7 +550,7 @@ const ProductListing = () => {
             {/* Status */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
+                Status <span className="text-red-500">*</span>
               </label>
               <select
                 value={newTransaction.status}
